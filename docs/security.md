@@ -53,9 +53,11 @@
 - **R-1 Code delivery.** The relay also serves the JavaScript. A malicious server can ship code that exfiltrates the
   key. Inherent to browser E2E crypto; mitigations would be a signed/installable client or subresource pinning.
 - **R-2 Leaked link = leaked conversation.** Anyone with the full link can read; with a symmetric key they could
-  also forge frames *if* they could publish (the sender token prevents that via the relay, not cryptographically).
-  Future: ECDSA-signed frames (forgery) and ECDH + short authentication string or PAKE (no secret in the link,
-  forward secrecy).
+  also forge frames *if* they could publish. They cannot: only the socket holding the sender token (never in the
+  link) may publish, so forging needs a compromised relay as well, and that relay already wins through R-1.
+  Future work: ECDH + short authentication string or PAKE (no secret in the link, forward secrecy), which fixes
+  reading and forging together. ECDSA-signed frames were evaluated and not built: they only add value once R-1 is
+  mitigated or the protocol has more than one publisher ([ADR 0009](decisions/0009-signed-frames.md)).
 - **R-3 Metadata.** The relay sees who talks to whom, when, roughly how much (bucketed), and when the sender is
   active.
 - **R-4 Endpoint compromise.** Malware, malicious extensions or screen capture on either device defeat everything.

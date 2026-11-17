@@ -6,6 +6,39 @@
  * Text/background pairs are checked against WCAG AA (4.5:1 for text, 3:1 for UI boundaries).
  */
 
+/*
+ * Self-hosted heading fonts (OFL, from @fontsource): latin subset, one weight each, so the CSP can stay
+ * font-src 'self'. Browsers only download a face when text actually uses it, so the two alternatives
+ * cost nothing outside /design. size-adjust evens out the very different x-heights so headings keep
+ * their size and line height whichever face is active.
+ */
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  size-adjust: 122%;
+  src: url('@fontsource/caveat/files/caveat-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Kalam';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  size-adjust: 92%;
+  src: url('@fontsource/kalam/files/kalam-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  size-adjust: 108%;
+  src: url('@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff2') format('woff2');
+}
+
 :root {
   color-scheme: light dark;
 
@@ -53,7 +86,12 @@
   --illo-accent: #c2492b;
   --illo-ground: #efe8dc;
 
-  /* Type: system stack only (no remote fonts, CSP). */
+  /*
+   * Type. Headings and the wordmark use a self-hosted handwritten face (a label scribbled on the can);
+   * everything people must read quickly stays in the system sans. Swap the heading face by changing
+   * --font-display to another family declared below.
+   */
+  --font-display: 'Caveat', var(--font-sans);
   --font-sans:
     system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
@@ -68,6 +106,7 @@
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-bold: 650;
+  --weight-display: 600;
 
   /* Spacing: 4px base. */
   --space-1: 0.25rem;
@@ -163,20 +202,22 @@ body {
 
 h1,
 h2,
-h3 {
+h3,
+.wordmark {
   margin: 0;
+  font-family: var(--font-display);
   line-height: var(--leading-tight);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-display);
+  /* Each face ships one weight; never let the browser smear a fake bold over handwriting. */
+  font-synthesis: none;
 }
 
 h1 {
   font-size: var(--text-2xl);
-  letter-spacing: -0.02em;
 }
 
 h2 {
   font-size: var(--text-xl);
-  letter-spacing: -0.01em;
 }
 
 h3 {

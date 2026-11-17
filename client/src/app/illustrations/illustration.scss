@@ -29,11 +29,14 @@ svg {
  * string on to the viewport's edge at the same height (y 100 of 160) and thickness (1.5 of 320 viewBox
  * units, via container units), so a sender window on the left and a receiver window on the right read as
  * one line. It is as wide as the gap between the hero and the viewport edge (zero on phones, where the
- * hero is already full-bleed); body's overflow-x: clip swallows the scrollbar's few pixels. Hidden
+ * hero is already full-bleed); the page's overflow-x: clip swallows the scrollbar's few pixels. Hidden
  * outside a hero and in the /design cards, where the art already spans its card.
  */
 .tail {
   display: none;
+}
+:host {
+  --illo-string-dim: color-mix(in srgb, var(--illo-string) 55%, var(--color-bg));
 }
 :host(.hero) {
   position: relative;
@@ -43,6 +46,7 @@ svg {
   display: block;
   position: absolute;
   top: calc(100% * 100 / 160);
+  /* Overlaps the art by 2px under the round cap and ends exactly at the viewport edge. */
   width: calc((100vw - 100%) / 2 + 2px);
   height: calc(100cqi * 1.5 / 320);
   translate: 0 -50%;
@@ -59,15 +63,8 @@ svg {
 .tail--left {
   right: calc(100% - 2px);
 }
-.tail--waiting {
-  opacity: 0.55;
-}
-/* Dimmed, an overlap would show as a darker dot: start where the string's round cap ends instead. */
-.tail--right.tail--waiting {
-  left: calc(100% + 100cqi * 0.75 / 320);
-}
-.tail--left.tail--waiting {
-  right: calc(100% + 100cqi * 0.75 / 320);
+:host(.hero) .tail--waiting {
+  background: var(--illo-string-dim);
 }
 
 .ground {
@@ -144,9 +141,10 @@ svg {
 }
 
 /* A frame travelling along the live string: one short bright dash, hidden at rest (driven by WAAPI). */
-/* Waiting for the other end: the loop is there, but quiet. */
+/* Waiting for the other end: the loop is there, but quiet. An opaque mix rather than opacity, so the string
+   and its full-bleed tail can overlap at the art's edge without a darker dot or a seam. */
 .string--waiting {
-  opacity: 0.55;
+  stroke: var(--illo-string-dim);
 }
 
 .pulse {

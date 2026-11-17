@@ -10,3 +10,4 @@ Add one when a choice would surprise a new contributor. Number sequentially; nev
 | [0003](0003-express-socketio-relay.md) | Minimal Express + socket.io relay | Accepted |
 | [0004](0004-session-ends-on-reload.md) | Keys are memory-only; reload ends the session | Accepted |
 | [0005](0005-no-decoy-traffic.md) | Padding instead of decoy messages | Accepted |
+| [0006](0006-csp-style-nonce.md) | Per-response style nonce instead of `'unsafe-inline'` | Accepted |

@@ -29,9 +29,17 @@
 | Length / typing-rhythm leakage | Size-bucket padding; debounce; typing+heartbeat frames padded like content | `client` |
 | Injection by id-holder | Only the socket authenticated with the sender token may publish; receiver socket is receive-only | `server` |
 | Second receiver / scanner burns slot | Single receiver lock; receiver joins only after explicit **Open** click | `server`, `client` |
-| XSS → key theft | Angular interpolation only, strict CSP (`default-src 'self'`, no inline script), no third-party scripts | `client`, `server` |
+| XSS → key theft | Angular interpolation only; strict CSP (`default-src 'none'`, `script-src 'self'`, style nonce per response, no `'unsafe-inline'`, Trusted Types required, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'none'`); no third-party scripts ([ADR 0006](decisions/0006-csp-style-nonce.md)) | `client`, `server/src/headers.ts` |
+| Clickjacking, MIME sniffing, cross-origin leaks | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`, `Permissions-Policy` denying camera, microphone, geolocation and more; no `X-Powered-By` | `server/src/headers.ts` |
+| Stale or cached shell / downgrade | `Cache-Control: no-store` on everything except hashed assets (immutable); `Strict-Transport-Security` (1 year, includeSubDomains) only on requests seen as HTTPS (TLS or `X-Forwarded-Proto: https`; forging it over HTTP is harmless, browsers ignore HSTS there) | `server` |
+| Dotfile / source disclosure | Any path with a dot-segment (`/.env`, `/.git/...`, also percent-encoded) answers 404; never served and never answered with the SPA | `server` |
 | Abuse / DoS | Frame size limit, rate limit, session TTL, bounded session count | `server` |
 | Stale sessions | Session ends on reload/close; 20 s grace for network blips only | `server`, `client` |
+
+### Deployment notes
+- **Reverse proxy must preserve `Host`** (nginx: `proxy_set_header Host $host;`). The socket.io origin check compares
+  the browser's `Origin` host:port with `Host` (scheme is not compared), so a rewritten `Host` makes every handshake 403.
+- Terminate TLS at the proxy and send `X-Forwarded-Proto: https` so HSTS is emitted; also forward WebSocket upgrades.
 
 ## Residual risks (documented, accepted)
 - **R-1 Code delivery.** The relay also serves the JavaScript. A malicious server can ship code that exfiltrates the

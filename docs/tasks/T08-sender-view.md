@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| dev | T04, T07, T11 (visuals) | pr-open | feat/T08-sender-view |
+| dev | T04, T07, T11 (visuals) | done | feat/T08-sender-view |
 
 ## Goal
 Create session → show link with copy button (and a hint to share it privately) → textarea (10k char limit) →

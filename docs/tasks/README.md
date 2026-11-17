@@ -13,7 +13,7 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T06](T06-security-headers.md) | Security headers + static serving | dev | T01 | done |
 | [T07](T07-relay-client.md) | Client relay service | dev | T03 | done |
 | [T08](T08-sender-view.md) | Sender view | dev | T04, T07, T11 | done |
-| [T09](T09-receiver-view.md) | Receiver view | dev | T04, T07, T11 | in-review |
+| [T09](T09-receiver-view.md) | Receiver view | dev | T04, T07, T11 | pr-open |
 | [T10](T10-lifecycle-and-staleness.md) | Disconnect, resume, staleness | dev | T05, T08, T09 | backlog |
 | [T11](T11-design-system.md) | Design system + logo | designer | T01 | done |
 | [T12](T12-e2e-suite.md) | End-to-end suite | qa-tester | T08, T09 | backlog |

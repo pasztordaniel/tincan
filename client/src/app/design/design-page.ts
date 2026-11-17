@@ -305,7 +305,7 @@ const SAMPLE =
           <figure class="frame card">
             <figcaption>Pill change</figcaption>
             <div class="stack stack--center">
-              <app-status-pill [state]="pillStates[pillIndex()]" role="sender" />
+              <app-status-pill [state]="pillState()" role="sender" />
             </div>
             <p class="note">
               The pill pops when the state changes; the waiting dot beats four times.
@@ -438,7 +438,7 @@ export class DesignPage {
   protected readonly reducedMotion = !motionAllowed();
   protected readonly replays = signal<Partial<Record<MotionDemoId, number>>>({});
   protected readonly frames = signal(0);
-  protected readonly pillIndex = signal(0);
+  protected readonly pillState = signal<LineState>('waiting');
 
   protected replay(id: MotionDemoId): void {
     this.replays.update((r) => ({ ...r, [id]: (r[id] ?? 0) + 1 }));
@@ -449,7 +449,8 @@ export class DesignPage {
   }
 
   protected nextPill(): void {
-    this.pillIndex.update((i) => (i + 1) % this.pillStates.length);
+    const states = this.pillStates;
+    this.pillState.update((s) => states[(states.indexOf(s) + 1) % states.length] ?? 'waiting');
   }
 
   protected readonly pillStates: LineState[] = [

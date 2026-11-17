@@ -77,3 +77,7 @@
     risk, not less.
   - crypto-review: relay/web-platform items for this module PASS; key handling, encryption, receiving N/A (T04,
     T08/T09); negative tests present for malformed frames/peer/ended/acks, offline sends, ping-expired buffer, rate cap.
+- qa-tester: QA PASS (2026-11-17), report [docs/testing/T07.md](../testing/T07.md). `RelayService` bundled into a page served
+  by the real relay under the real CSP, two Chromium pages: ordered delivery, `full`/`bad_request`/`not_found`, drop and
+  resume (one kept frame delivered once, plain frames dropped), `grace_expired`/`peer_timeout` at 20 s, `leave()` to
+  `peer_left`, local `rate_limited` before the relay cuts, no token in any signal, observable, storage or console. 37/37 checks.

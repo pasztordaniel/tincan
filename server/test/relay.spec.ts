@@ -242,6 +242,39 @@ describe('untrusted input', () => {
     expect(await closed).toBe('transport close');
     expect(h.relay.sessionCount).toBe(0);
   });
+
+  it('drops a receiver that stops reading instead of buffering frames for it', async () => {
+    const h = await relay({
+      maxReceiverBacklog: 5,
+      maxEventsPerWindow: 1000,
+      floodEventsPerWindow: 2000,
+    });
+    const { sender, receiver, sessionId, receiverToken } = await h.pair();
+    // Stall the receiver's TCP reads, as a slow-reading attacker would.
+    const transport = receiver.socket.io.engine.transport as unknown as {
+      ws: { _socket: { pause(): void; destroy(): void } };
+    };
+    const tcp = transport.ws._socket;
+    tcp.pause();
+    const reconnecting = sender.next('peer', 10_000);
+    let seq = 0;
+    let dropped = false;
+    void reconnecting.then(() => (dropped = true));
+    while (!dropped && seq < 400) {
+      expect(await sender.call('frame', frame(++seq, 65536))).toEqual(OK);
+    }
+    expect(await reconnecting).toEqual({ state: 'reconnecting' });
+    expect(h.relay.sessionCount).toBe(1);
+
+    // The receiver resumes on a fresh connection, and the sender learns it can resend its state.
+    const resumed = await h.connect();
+    expect(await resumed.call('session:resume', { sessionId, token: receiverToken })).toEqual(OK);
+    expect(await sender.next('peer')).toEqual({ state: 'connected' });
+    expect(await sender.call('frame', frame(++seq))).toEqual(OK);
+    expect(((await resumed.next('frame')) as { seq: number }).seq).toBe(seq);
+    // The stalled client never reads the close handshake; free it so the server can stop.
+    tcp.destroy();
+  });
 });
 
 describe('unbound sockets', () => {

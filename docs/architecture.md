@@ -87,6 +87,9 @@ Relay behaviour (`server/src/relay/`, T05) beyond the table:
 - socket.io binary packets (types 5 and 6) and binary engine.io messages close the connection before they are decoded,
   also before the client has joined the namespace (a bound socket's session ends as `peer_left`). A message above `MAX_MESSAGE_BYTES` closes the transport, which the relay
   treats as a drop (grace).
+- Slow receiver: when 40 packets are queued for a receiver that is not reading, the next frame drops the receiver's
+  connection instead of being buffered (a drop: grace, `peer: reconnecting` to the sender; after a resume the sender
+  resends its full state).
 - Disconnect reasons: `client namespace disconnect` ends the session at once (`peer_left`); every other reason starts
   the grace (`peer: reconnecting` to the other party). A socket replaced by a takeover is unbound before the server
   disconnects it, so its disconnect changes nothing.

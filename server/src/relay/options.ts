@@ -26,6 +26,12 @@ export interface RelayOptions {
   /** Events per window at which the socket counts as flooding and is disconnected. */
   floodEventsPerWindow: number;
   /**
+   * Packets the relay may hold for a receiver that is not reading (its transport is not writable). At
+   * this backlog a further frame drops the receiver's connection instead of buffering it, which starts
+   * the receiver's grace; after a resume the sender resends its full state.
+   */
+  maxReceiverBacklog: number;
+  /**
    * A socket that has not completed a create, join or resume this long after connecting is
    * disconnected, so idle connections cannot pile up. Also socket.io's `connectTimeout`, which closes a
    * connection that never joins the namespace.
@@ -51,6 +57,8 @@ export const DEFAULT_RELAY_OPTIONS: Readonly<RelayOptions> = Object.freeze({
   // An honest sender sends a few frames per second; three times the limit within one window is never
   // a slow client catching up, so the socket is cut instead of being answered event by event.
   floodEventsPerWindow: 3 * MAX_FRAMES_PER_WINDOW,
+  // About two seconds of frames at the rate limit, at most ~4 MB of the largest frames per receiver.
+  maxReceiverBacklog: 2 * MAX_FRAMES_PER_WINDOW,
   unboundTimeoutMs: DEFAULT_UNBOUND_TIMEOUT_MS,
   now: () => Date.now(),
 });

@@ -82,6 +82,8 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
   const bindings = new WeakMap<RelaySocket, Binding>();
   /** Pending unbound-socket timeouts; cleared by the socket's first successful create, join or resume. */
   const unboundTimers = new WeakMap<RelaySocket, NodeJS.Timeout>();
+  /** Packets queued in the engine for each socket since its last flush to the transport. */
+  const backlogs = new WeakMap<RelaySocket, { packets: number }>();
 
   // -------------------------------------------------------------------------------------------
   // Session state
@@ -260,13 +262,16 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
     if (frame.seq <= session.lastSeq) return ack(fail('bad_request'));
     session.lastSeq = frame.seq;
     touch(session);
-    // Forward a fresh object with exactly the validated fields.
-    session.receiver?.socket?.emit(EVENTS.frame, {
-      v: frame.v,
-      seq: frame.seq,
-      iv: frame.iv,
-      ct: frame.ct,
-    });
+    const target = session.receiver?.socket;
+    if (target && (backlogs.get(target)?.packets ?? 0) >= options.maxReceiverBacklog) {
+      // The receiver is not reading, so the relay would buffer frames without bound. Drop its
+      // connection instead: that starts its grace (the sender sees `reconnecting`) and the frame is
+      // not forwarded, like any frame for an absent receiver.
+      target.conn.close(true);
+    } else {
+      // Forward a fresh object with exactly the validated fields.
+      target?.emit(EVENTS.frame, { v: frame.v, seq: frame.seq, iv: frame.iv, ct: frame.ct });
+    }
     ack({ ok: true });
   }
 
@@ -334,6 +339,13 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
       socket,
       setTimeout(() => socket.disconnect(true), options.unboundTimeoutMs).unref(),
     );
+
+    const backlog = { packets: 0 };
+    backlogs.set(socket, backlog);
+    socket.conn.on('packetCreate', () => backlog.packets++);
+    socket.conn.on('flush', () => {
+      backlog.packets = 0;
+    });
 
     const limiter = new RateLimiter(
       options.rateWindowMs,

@@ -16,7 +16,8 @@ import { RelayService, type SendFrameOptions } from '../relay/relay.service';
 import type { LineState } from '../ui/status-pill/status-pill.model';
 
 /** Why `start()` did not produce a session. */
-export type StartError = 'crypto' | 'busy' | 'offline' | 'failed';
+/** `cancelled`: `end()` or a newer `start()` ran while this one was in flight; nothing to report. */
+export type StartError = 'crypto' | 'busy' | 'offline' | 'failed' | 'cancelled';
 
 export type StartOutcome = { ok: true } | { ok: false; error: StartError };
 
@@ -75,16 +76,29 @@ export class SenderSession implements OnDestroy {
   private lastActivityAt = 0;
   /** The latest text did not reach the relay (dropped, rate limited): resend on the next beat. */
   private resync = false;
+  /** Numbers text sends, so only the newest one's outcome decides `resync` (acks settle out of order). */
+  private textSendId = 0;
+  /** Bumped by `stop()`: a `start()` that sees another epoch after an await was cancelled meanwhile. */
+  private epoch = 0;
 
   /** Creates a fresh key and session, replacing any earlier one. */
   async start(): Promise<StartOutcome> {
     this.end();
+    const epoch = this.epoch;
     this._cut.set(false);
     this._starting.set(true);
     try {
       const generated = await this.crypto.generateKey();
+      if (epoch !== this.epoch) return { ok: false, error: 'cancelled' };
       if (!generated.ok) return { ok: false, error: 'crypto' };
       const created = await this.relay.create();
+      if (epoch !== this.epoch) {
+        // Ended (or replaced) while the relay was creating: a session made for nobody must not stay open.
+        // If a newer start() had already called create(), ours came back failed (replaced), so this
+        // never leaves the newer session.
+        if (created.ok) this.relay.leave();
+        return { ok: false, error: 'cancelled' };
+      }
       if (!created.ok) {
         const error = created.error;
         return {
@@ -106,7 +120,7 @@ export class SenderSession implements OnDestroy {
       this.resetIdle();
       return { ok: true };
     } finally {
-      this._starting.set(false);
+      if (epoch === this.epoch) this._starting.set(false);
     }
   }
 
@@ -157,32 +171,41 @@ export class SenderSession implements OnDestroy {
     this.pendingSince = null;
     // The text is read now, so a burst collapses into one frame carrying the newest state.
     const text = this._text();
-    this.send(() => ({ t: 'text', text, ts: Date.now() }), { keepLatest: true }, true);
+    const id = ++this.textSendId;
+    this.send(() => ({ t: 'text', text, ts: Date.now() }), { keepLatest: true }, id);
   }
 
   private sendTyping(): void {
     const now = Date.now();
     if (now - this.lastTypingAt < TYPING_MIN_INTERVAL_MS) return;
     this.lastTypingAt = now;
-    this.send(() => ({ t: 'typing', ts: Date.now() }), {}, false);
+    this.send(() => ({ t: 'typing', ts: Date.now() }), {});
   }
 
   private beat(): void {
     if (this.relay.status() !== 'connected') return;
     if (this.resync) this.sendText();
-    this.send(() => ({ t: 'beat', ts: Date.now() }), {}, false);
+    this.send(() => ({ t: 'beat', ts: Date.now() }), {});
   }
 
-  /** `make` runs per call, so every seal gets its own message object. */
-  private send(make: () => PlaintextMessage, options: SendFrameOptions, isText: boolean): void {
+  /**
+   * `make` runs per call, so every seal gets its own message object. `textId` marks a text send.
+   *
+   * A frame sealed for a session that ended (or was replaced) during the seal is never handed to the
+   * relay: on a new session's socket it would carry the old key and seq, fail authentication at the
+   * receiver and, with a high seq, make the relay refuse the new session's frames as non-increasing.
+   */
+  private send(make: () => PlaintextMessage, options: SendFrameOptions, textId?: number): void {
     const sealer = this.sealer;
     if (!sealer) return;
     void (async () => {
       const sealed = await sealer.seal(make());
-      if (!sealed.ok) return;
+      if (!sealed.ok || this.sealer !== sealer) return;
       const outcome = await this.relay.sendFrame(sealed.frame, options);
-      if (isText && this.sealer === sealer)
+      // Only the newest text send counts: an older ack settling late must not clear (or set) the flag.
+      if (textId === this.textSendId && this.sealer === sealer) {
         this.resync = outcome !== 'accepted' && outcome !== 'queued';
+      }
     })();
   }
 
@@ -219,6 +242,8 @@ export class SenderSession implements OnDestroy {
 
   /** Drops timers, subscriptions, the key and the link. The relay is told separately. */
   private stop(): void {
+    this.epoch++;
+    this._starting.set(false);
     this._active.set(false);
     this._idle.set(false);
     this._link.set(null);

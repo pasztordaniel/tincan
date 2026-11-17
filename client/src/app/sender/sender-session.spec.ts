@@ -38,12 +38,19 @@ class FakeRelay {
     ok: true,
     sessionId: SID,
   };
-  create(): Promise<unknown> {
-    return Promise.resolve(this.createResult);
+  /** When set, `create()` waits for it (a slow relay). */
+  createGate: Promise<void> | null = null;
+  /** When set, `sendFrame` answers with this instead of `outcome` (an ack still in flight). */
+  nextOutcome: Promise<FrameOutcome> | null = null;
+  async create(): Promise<unknown> {
+    if (this.createGate) await this.createGate;
+    return this.createResult;
   }
   sendFrame(frame: Frame, options?: SendFrameOptions): Promise<FrameOutcome> {
     this.sent.push({ frame, options });
-    return Promise.resolve(this.outcome);
+    const next = this.nextOutcome;
+    this.nextOutcome = null;
+    return next ?? Promise.resolve(this.outcome);
   }
   leave(): void {
     this.leaves++;
@@ -54,10 +61,13 @@ class FakeRelay {
 /** Records the exact message objects handed to `seal` and returns a frame that encodes the message. */
 class FakeSealer {
   readonly messages: PlaintextMessage[] = [];
-  seal(message: PlaintextMessage): Promise<SealResult> {
+  /** When set, seals wait for it (a slow WebCrypto call). */
+  gate: Promise<void> | null = null;
+  async seal(message: PlaintextMessage): Promise<SealResult> {
     this.messages.push(message);
     const frame = { v: 1, seq: this.messages.length, iv: JSON.stringify(message), ct: '' };
-    return Promise.resolve({ ok: true, frame: frame as unknown as Frame });
+    if (this.gate) await this.gate;
+    return { ok: true, frame: frame as unknown as Frame };
   }
   texts(): string[] {
     return this.messages.flatMap((m) => (m.t === 'text' ? [m.text] : []));
@@ -129,6 +139,36 @@ describe('SenderSession', () => {
       expect(await session.start()).toEqual({ ok: false, error: 'failed' });
       expect(session.link()).toBeNull();
       expect(session.active()).toBe(false);
+      expect(session.starting()).toBe(false);
+    });
+
+    it('end() while the relay is creating cancels the start and leaves the new session', async () => {
+      let release!: () => void;
+      relay.createGate = new Promise((r) => (release = r));
+      const pending = session.start();
+      await advance(0);
+      expect(session.starting()).toBe(true);
+      session.end();
+      expect(session.starting()).toBe(false);
+      release();
+      expect(await pending).toEqual({ ok: false, error: 'cancelled' });
+      expect(relay.leaves).toBe(1);
+      expect(session.active()).toBe(false);
+      expect(session.link()).toBeNull();
+      await advance(BEAT_INTERVAL_MS * 2);
+      expect(sealer.messages).toEqual([]);
+    });
+
+    it('a newer start wins over one still in flight', async () => {
+      let release!: () => void;
+      relay.createGate = new Promise((r) => (release = r));
+      const first = session.start();
+      await advance(0);
+      const second = session.start();
+      release();
+      expect(await first).toEqual({ ok: false, error: 'cancelled' });
+      expect(await second).toEqual({ ok: true });
+      expect(session.active()).toBe(true);
       expect(session.starting()).toBe(false);
     });
   });
@@ -223,6 +263,22 @@ describe('SenderSession', () => {
       expect(sealer.texts()).toEqual(['lost', 'lost']);
       await advance(BEAT_INTERVAL_MS);
       expect(sealer.texts()).toEqual(['lost', 'lost']);
+    });
+
+    it('a late ack of an older text does not cancel the resend of a newer one', async () => {
+      await started();
+      let ackOld!: (o: FrameOutcome) => void;
+      session.edit('old');
+      await advance(0); // its typing frame goes out at once
+      relay.nextOutcome = new Promise((r) => (ackOld = r)); // the text frame's ack stays in flight
+      await advance(TEXT_DEBOUNCE_MS);
+      relay.outcome = 'rate_limited';
+      session.edit('new');
+      await advance(TEXT_DEBOUNCE_MS);
+      ackOld('accepted'); // the older frame's ack lands after the newer one was refused
+      relay.outcome = 'accepted';
+      await advance(BEAT_INTERVAL_MS);
+      expect(sealer.texts()).toEqual(['old', 'new', 'new']);
     });
   });
 
@@ -324,6 +380,20 @@ describe('SenderSession', () => {
       session.end();
       expect(relay.leaves).toBe(1);
       expect(session.text()).toBe('');
+    });
+
+    it('a frame sealed while the session ends is never handed to the relay', async () => {
+      await started();
+      let release!: () => void;
+      sealer.gate = new Promise((r) => (release = r));
+      session.edit('in flight');
+      await advance(TEXT_DEBOUNCE_MS);
+      expect(sealer.texts()).toEqual(['in flight']);
+      const sent = relay.sent.length;
+      session.end();
+      release();
+      await advance(0);
+      expect(relay.sent.length).toBe(sent);
     });
 
     it('a pending text frame is not sent after end()', async () => {

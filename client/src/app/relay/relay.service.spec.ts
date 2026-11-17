@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { RECONNECT_GRACE_MS, type Frame } from '@tincan/shared';
+import {
+  FRAME_RATE_WINDOW_MS,
+  MAX_FRAMES_PER_WINDOW,
+  RECONNECT_GRACE_MS,
+  type Frame,
+} from '@tincan/shared';
 import { RELAY_SOCKET_FACTORY, type TincanSocket } from './relay-socket';
 import { RelayService, type ProtocolError, type RelayEndReason } from './relay.service';
 
@@ -428,6 +433,34 @@ describe('RelayService', () => {
       const p = relay.sendFrame(frame(1));
       socket.serverDrop();
       expect(await p).toBe('dropped');
+    });
+  });
+
+  describe('rate cap', () => {
+    it('never emits more events per window than the relay allows', async () => {
+      await createSession(); // session:create counts too
+      socket.answers.set('frame', { ok: true });
+      const outcomes: string[] = [];
+      for (let i = 1; i <= 60; i++) outcomes.push(await relay.sendFrame(frame(i)));
+      expect(socket.emitted).toHaveLength(MAX_FRAMES_PER_WINDOW);
+      expect(outcomes.filter((o) => o === 'accepted')).toHaveLength(MAX_FRAMES_PER_WINDOW - 1);
+      expect(outcomes.filter((o) => o === 'rate_limited')).toHaveLength(
+        60 - MAX_FRAMES_PER_WINDOW + 1,
+      );
+      await vi.advanceTimersByTimeAsync(FRAME_RATE_WINDOW_MS);
+      expect(await relay.sendFrame(frame(61))).toBe('accepted');
+    });
+
+    it('starts a fresh count on a new connection, so the kept frame goes out after a resume', async () => {
+      await createSession();
+      socket.answers.set('frame', { ok: true });
+      for (let i = 1; i <= MAX_FRAMES_PER_WINDOW; i++) await relay.sendFrame(frame(i));
+      socket.serverDrop();
+      expect(await relay.sendFrame(frame(99), { keepLatest: true })).toBe('queued');
+      socket.answers.set('session:resume', { ok: true });
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(socket.emitted.at(-1)?.args[0]).toEqual(frame(99));
     });
   });
 

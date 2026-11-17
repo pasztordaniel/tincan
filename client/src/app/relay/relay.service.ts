@@ -1,6 +1,8 @@
 import { Injectable, inject, signal, type OnDestroy } from '@angular/core';
 import {
   EVENTS,
+  FRAME_RATE_WINDOW_MS,
+  MAX_FRAMES_PER_WINDOW,
   RECONNECT_GRACE_MS,
   isCreateResult,
   isFrame,
@@ -104,6 +106,8 @@ export class RelayService implements OnDestroy {
   private graceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly pendingAcks = new Set<() => void>();
   private keptFrame: Frame | null = null;
+  /** When this connection emitted its recent events, for the local rate cap (see `emitFrame`). */
+  private emitTimes: number[] = [];
   /** Settles a pending `open()` as failed, so a teardown never leaves it (and its timer) hanging. */
   private cancelOpen: (() => void) | null = null;
 
@@ -148,7 +152,8 @@ export class RelayService implements OnDestroy {
   /**
    * Sends one frame. Never lets socket.io buffer: when not connected the frame is dropped, or with
    * `keepLatest` held as the single latest frame and sent after a successful resume. A burst on
-   * reconnect would hit the relay's rate limit and flood disconnect.
+   * reconnect would hit the relay's rate limit and flood disconnect. For the same reason a frame that
+   * would exceed the relay's rate limit is not sent and resolves `rate_limited` locally.
    */
   async sendFrame(frame: Frame, options: SendFrameOptions = {}): Promise<FrameOutcome> {
     if (!isFrame(frame)) return 'bad_request';
@@ -221,6 +226,7 @@ export class RelayService implements OnDestroy {
       // fires, i.e. before the resume. Drop it: nothing sent offline may reach the relay later.
       socket.sendBuffer = [];
       if (this.socket !== socket) return;
+      this.emitTimes = []; // the relay counts per connection
       this.flushAcks();
       if (this._status() === 'ended') return;
       if (!this.session) {
@@ -334,6 +340,7 @@ export class RelayService implements OnDestroy {
     cancelOpen?.();
     this.flushAcks();
     this.keptFrame = null;
+    this.emitTimes = [];
     this.session = null;
     const socket = this.socket;
     this.socket = null;
@@ -345,7 +352,15 @@ export class RelayService implements OnDestroy {
 
   // --- acks ---------------------------------------------------------------------------------
 
+  /**
+   * The relay counts every event per connection: above `MAX_FRAMES_PER_WINDOW` per window it answers
+   * `rate_limited`, at three times that it cuts the socket and ends the session. Never get there:
+   * refuse a frame locally once this connection emitted that many events in the last window.
+   */
   private async emitFrame(socket: TincanSocket, frame: Frame): Promise<FrameOutcome> {
+    const since = Date.now() - FRAME_RATE_WINDOW_MS;
+    this.emitTimes = this.emitTimes.filter((t) => t > since);
+    if (this.emitTimes.length >= MAX_FRAMES_PER_WINDOW) return 'rate_limited';
     const result = await this.ack(
       socket,
       isFrameResult,
@@ -370,6 +385,7 @@ export class RelayService implements OnDestroy {
   ): Promise<AckResult<T>> {
     // socket.io would buffer an emit on a disconnected socket and send it on the next connection.
     if (!socket.connected) return Promise.resolve('offline');
+    this.emitTimes.push(Date.now());
     return new Promise((resolve) => {
       const settle = (value: AckResult<T>): void => {
         clearTimeout(timer);

@@ -22,9 +22,9 @@ Actions pinned by commit SHA, `permissions: contents: read`. Then protect `main`
   cache, `npm ci`, cached Playwright Chromium + system deps, `npm run verify`, Playwright report uploaded on failure)
   and `.github/dependabot.yml` (npm + github-actions, weekly, minor and patch grouped). Permissions are
   `contents: read`; concurrency cancels superseded runs per PR or ref.
-- dev: decision, action pinning: actions are pinned to major versions (`@v5`, `@v4`) on the PM's instruction, not to
-  commit SHAs as the Goal above says. Dependabot's github-actions ecosystem keeps them current. Switching to SHAs
-  later is a small change per action.
+- dev: decision, action pinning: every action is pinned to a full commit SHA with a `# vX.Y.Z` comment (checkout
+  v7.0.1, setup-node v7.1.0, cache v6.1.0, upload-artifact v7.0.2: the latest release of each major, tags resolved
+  with `gh api`). Dependabot's github-actions ecosystem updates the SHA pins.
 - dev: decision, `prepare`: it runs `tsc` to build `shared/`, so it needs dev dependencies. CI uses `npm ci`, which
   installs them, so it works. `npm ci --omit=dev` is not supported and must not be used; production should build
   first (`npm ci && npm run build`) and ship the result.
@@ -35,19 +35,20 @@ Actions pinned by commit SHA, `permissions: contents: read`. Then protect `main`
   missing native binding.
 - dev: tested: `npm run verify` green locally on Node 24.22.3 with scripts skipped; workflow validated with
   `@action-validator/cli` (no errors). The workflow has not run on GitHub yet.
-- dev: branch protection NOT applied. A human runs this after merge (replace OWNER/REPO, needs admin rights):
+- dev: branch protection NOT applied. A human runs this after merge (needs admin rights). Approvals are 0 because PRs come from the maintainer's own
+  account; the human review is the merge itself. Admins are still bound (`enforce_admins`):
 
   ```bash
-  gh api -X PUT repos/OWNER/REPO/branches/main/protection --input - <<'JSON'
+  gh api -X PUT repos/pasztordaniel/tincan/branches/main/protection --input - <<'JSON'
   {
     "required_status_checks": { "strict": true, "contexts": ["verify"] },
     "enforce_admins": true,
-    "required_pull_request_reviews": { "required_approving_review_count": 1, "dismiss_stale_reviews": true },
+    "required_pull_request_reviews": { "required_approving_review_count": 0, "dismiss_stale_reviews": true },
     "restrictions": null,
     "required_linear_history": true,
     "allow_force_pushes": false,
     "allow_deletions": false
   }
   JSON
-  gh api -X PATCH repos/OWNER/REPO -F allow_squash_merge=true -F allow_merge_commit=false -F allow_rebase_merge=false -F delete_branch_on_merge=true
+  gh api -X PATCH repos/pasztordaniel/tincan -F allow_squash_merge=true -F allow_merge_commit=false -F allow_rebase_merge=false -F delete_branch_on_merge=true
   ```

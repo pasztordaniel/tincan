@@ -51,7 +51,7 @@ On the sender and receiver heroes the string is full-bleed: past the art's own e
 the viewport edge (right for the sender, left for the receiver), at the same height in both (y 100 of the 160-high
 art), so a sender window on the left and a receiver window on the right read as one continuous line at any width.
 The tail is a decorative element sized from the gap between hero and viewport (zero on phones, where the hero is
-already full-bleed) and clipped by `body { overflow-x: clip }`, so it never adds a sideways scroll; it dims with the
+already full-bleed) and clipped by the page's `overflow-x: clip` (on `html` and `body`), so it never adds a sideways scroll; it dims with the
 waiting string, draws in after the sender's string (before the receiver's) and sways and twangs with it. Trouble
 states keep their plain sag between two cans and get no tail: the slack, cut, frayed and busy pictures have no
 free end to extend, and the idle sender's sagging line ends at the scissors on purpose. The `/design` cards hide

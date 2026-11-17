@@ -26,3 +26,7 @@ known limitations & future work, AI usage (models/tools, skills, one validated c
   contributions (T16 Escape race, T17 3 px overflow, T18 circular QR test). `<!-- TODO(T13/T15/T19) -->` markers
   sit where the audit summary, signed frames and updated counts go. Board: T17 synced to done (merged in #21).
   `E2E_PORT=3244 npm run verify` green.
+- pm: rebased on `main` 227cc6e (T13 merged, T15 won't do). README: T13 audit summary with a link to
+  `docs/security/audit-T13.md`, R-6 in the limitations, signed frames declined (ADR 0009, a leaked link can read but
+  not forge), counts from `main` (unit 93 + 297 + 112, e2e 33). Only the `<!-- TODO(T19) -->` markers remain (home
+  control and its test counts); the GIF gets re-recorded after T19 merges. `E2E_PORT=3244 npm run verify` green.

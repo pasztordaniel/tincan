@@ -121,13 +121,13 @@ client, to be limited per address at the reverse proxy. Report:
 
 ## Tests
 
-<!-- TODO(T13/T15/T19): update the counts below once those tasks land. -->
+<!-- TODO(T19): update the counts below once the home-link button lands. -->
 | Suite | Tool | Count (current `main`) |
 |---|---|---|
 | Unit: `shared/` (protocol, validators) | Vitest | 93 |
-| Unit: `client/` (crypto, padding, relay, sessions, views) | Vitest + Angular | 283 |
-| Unit: `server/` (relay, rate limits, headers) | Vitest | 110 |
-| End-to-end (two real browser contexts against the production build) | Playwright | 32 |
+| Unit: `client/` (crypto, padding, relay, sessions, views) | Vitest + Angular | 297 |
+| Unit: `server/` (relay, rate limits, headers) | Vitest | 112 |
+| End-to-end (two real browser contexts against the production build) | Playwright | 33 |
 
 ```bash
 npx playwright install chromium   # once

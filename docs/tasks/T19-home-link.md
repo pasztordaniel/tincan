@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| designer | T09, T10, T16 | in-review | feat/T19-home-link |
+| designer | T09, T10, T16 | done | `feat/T19-home-link` |
 
 ## Goal
 Every page except home has a control that takes you back to the home page, without silently cutting an open line.

@@ -80,8 +80,14 @@ export function sendIndex(res: Response, template: string): void {
   res.type('html').send(template.replaceAll(NONCE_PLACEHOLDER, nonce));
 }
 
-/** Angular names hashed output `name-XXXXXXXX.ext` (8 chars of A-Z0-9); safe to cache forever. */
-const HASHED_ASSET = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
+/**
+ * Hashed output of the Angular build, safe to cache forever: the bundles it names itself
+ * (`main-XXXXXXXX.js`, `chunk-...`, `styles-...css`) and files it copies into `media/`, with an
+ * 8-char esbuild hash (base32, A-Z2-7). A file copied as-is from `public/` that merely looks hashed
+ * (`logo-DARKMODE.svg`) is not matched, so it is never pinned in caches for a year.
+ */
+const HASHED_ASSET =
+  /[\\/](?:(?:main|polyfills|styles|scripts|chunk|worker)-[A-Z2-7]{8}\.(?:js|mjs|css)|media[\\/][^\\/]+-[A-Z2-7]{8}\.[a-z0-9]+)$/;
 
 export function setStaticHeaders(res: Response, path: string): void {
   if (HASHED_ASSET.test(path)) {

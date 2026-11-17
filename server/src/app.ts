@@ -5,7 +5,7 @@ import {
   type IncomingMessage,
   type Server as HttpServer,
 } from 'node:http';
-import { extname, join } from 'node:path';
+import { extname, join, posix } from 'node:path';
 import express, { type ErrorRequestHandler, type Express } from 'express';
 import { Server as SocketServer } from 'socket.io';
 import { APP_NAME } from '@tincan/shared';
@@ -46,14 +46,17 @@ export function isAllowedOrigin(origin: string | undefined, host: string | undef
   }
 }
 
-/** Checks the decoded path too, so `/%2eenv` cannot slip past. Undecodable paths are left to the 400 handler. */
-function hasDotSegment(path: string): boolean {
-  let decoded = path;
+/** Decodes like express.static does; undecodable paths stay raw and are left to its 400 handling. */
+function decodePath(path: string): string {
   try {
-    decoded = decodeURIComponent(path);
+    return decodeURIComponent(path);
   } catch {
-    // keep the raw path
+    return path;
   }
+}
+
+/** Checks the raw and the decoded path, so `/%2eenv` cannot slip past. */
+function hasDotSegment(path: string, decoded: string): boolean {
   return [path, decoded].some((p) => p.split(/[/\\]/).some((segment) => segment.startsWith('.')));
 }
 
@@ -78,18 +81,23 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
   if (clientDir && existsSync(join(clientDir, 'index.html'))) {
     // Read once: index.html is a template whose CSP nonce is filled in per response.
     const indexTemplate = readFileSync(join(clientDir, 'index.html'), 'utf8');
-    // Dotfiles and dot-directories (.git, .env, ...) are never served, nor answered with the SPA.
     app.use((req, res, next) => {
-      if (hasDotSegment(req.path)) {
+      const decoded = decodePath(req.path);
+      // Dotfiles and dot-directories (.git, .env, ...) are never served, nor answered with the SPA.
+      if (hasDotSegment(req.path, decoded)) {
         sendStatus(res, 404);
+        return;
+      }
+      // Every spelling of index.html (`/%69ndex.html`, `//index.html`, ...) goes through the
+      // template, so express.static never serves the raw file with its placeholder and no nonce.
+      const isGet = req.method === 'GET' || req.method === 'HEAD';
+      if (isGet && (req.path === '/' || posix.basename(decoded).toLowerCase() === 'index.html')) {
+        sendIndex(res, indexTemplate);
         return;
       }
       next();
     });
-    app.get(['/', '/index.html'], (_req, res) => {
-      sendIndex(res, indexTemplate);
-    });
-    // `index: false`: "/" is handled above so the nonce is always injected.
+    // `index: false`: "/" and index.html are handled above so the nonce is always injected.
     app.use(
       express.static(clientDir, { index: false, dotfiles: 'deny', setHeaders: setStaticHeaders }),
     );
@@ -131,13 +139,12 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
     },
   });
 
-  // socket.io answers its own paths before Express sees them, so add the headers here too (not
-  // the CSP: those responses are not documents).
-  io.engine.on('headers', (headers: Record<string, string>) => {
-    // engine.io already sets its own `Cache-Control: no-store`; do not duplicate it.
-    for (const [name, value] of Object.entries(BASE_HEADERS)) {
-      if (name !== 'Cache-Control') headers[name] = value;
-    }
+  // socket.io answers its own paths before Express sees them, so add the base headers here too
+  // (not the CSP: those responses are not documents). A listener prepended after socket.io has
+  // attached runs first for every request, including engine.io's own 400/403 error responses,
+  // which skip its `headers` event; engine.io's writeHead merges with headers set here.
+  httpServer.prependListener('request', (_req, res) => {
+    for (const [name, value] of Object.entries(BASE_HEADERS)) res.setHeader(name, value);
   });
 
   io.on('connection', () => {

@@ -42,10 +42,20 @@ icon.
 ### The string
 The string leaves the bottom of the can at mid-height and runs low, almost level. On an open line it curls up
 into one big, round cursive "e" loop (top level with the top of the right can), comes back down through itself
-and runs on: into the other can (home), off the right edge at the loop's mid-height (sender), or, mirrored, in
+and runs on: into the other can (home), level off the right edge just below the loop (sender), or, mirrored, in
 from the left edge and low into the can's bottom (receiver). The loop shows while the line is open: dim and
 still while waiting (sender waiting, receiver pick-up), full colour with draw-in, sway and pulses once live.
 Every trouble state (idle, busy, cut, frayed, slack) uses a plain low sag between the can bottoms instead.
+
+On the sender and receiver heroes the string is full-bleed: past the art's own edge a level tail carries it on to
+the viewport edge (right for the sender, left for the receiver), at the same height in both (y 100 of the 160-high
+art), so a sender window on the left and a receiver window on the right read as one continuous line at any width.
+The tail is a decorative element sized from the gap between hero and viewport (zero on phones, where the hero is
+already full-bleed) and clipped by `body { overflow-x: clip }`, so it never adds a sideways scroll; it dims with the
+waiting string, draws in after the sender's string (before the receiver's) and sways and twangs with it. Trouble
+states keep their plain sag between two cans and get no tail: the slack, cut, frayed and busy pictures have no
+free end to extend, and the idle sender's sagging line ends at the scissors on purpose. The `/design` cards hide
+the tail, since the art already spans its card there.
 
 ## Additions the security model requires
 These screens or states don't appear in the original sketch, but the protocol needs them:
@@ -87,7 +97,7 @@ it runs: CSS motion sits inside `@media (prefers-reduced-motion: no-preference)`
 
 | Animation | Trigger | What moves | Reduced motion |
 |---|---|---|---|
-| String draws in | Home load; thread created (small picture in the dialog); the line goes live (sender, receiver) | stroke-dashoffset from can to can or edge, 1.3 s | The full string, drawn |
+| String draws in | Home load; thread created (small picture in the dialog); the line goes live (sender, receiver) | stroke-dashoffset from can to can or edge, 1.3 s; the full-bleed tail scales in after it (sender) or before it (receiver), 0.35 s | The full string, drawn |
 | Live sway | Right after the draw-in on a live line | The string drifts 2 px, two slow swings, then rests | Still string |
 | Frame pulse | Every text change sent (sender) or received (receiver), at most one per 320 ms | A short bright dash runs along the string (WAAPI dashoffset) and the string twangs 1.5 px | None; the text itself is the signal |
 | Pick-up wobble | The receiver picks up and the line goes live | The can rocks once on its base, 0.8 s | Still can |

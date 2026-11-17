@@ -96,7 +96,16 @@ describe('session key', () => {
   it('reports unsupported when WebCrypto is unavailable', async () => {
     vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) });
     expect(await generateSessionKey()).toEqual({ ok: false, error: 'unsupported' });
-    expect(await importKeyString('A'.repeat(43))).toEqual({ ok: false, error: 'unsupported' });
+    const fill = vi.spyOn(Uint8Array.prototype, 'fill');
+    expect(await importKeyString('_'.repeat(42) + 'w')).toEqual({
+      ok: false,
+      error: 'unsupported',
+    });
+    // The decoded key bytes are zeroed on this path too.
+    const zeroed = fill.mock.contexts.filter((buf) => (buf as Uint8Array).length === 32);
+    expect(zeroed).toHaveLength(1);
+    expect((zeroed[0] as Uint8Array).every((b) => b === 0)).toBe(true);
+    vi.restoreAllMocks();
   });
 
   it('maps an unexpected importKey failure to crypto_failure', async () => {

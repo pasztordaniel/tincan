@@ -35,10 +35,11 @@ function subtle(): SubtleCrypto | undefined {
   return typeof crypto !== 'undefined' ? crypto.subtle : undefined;
 }
 
+/** Imports `raw` non-extractable and zeroes it on every path, including `unsupported`. */
 async function importRaw(raw: Uint8Array<ArrayBuffer>): Promise<KeyResult<CryptoKey>> {
-  const s = subtle();
-  if (s === undefined) return { ok: false, error: 'unsupported' };
   try {
+    const s = subtle();
+    if (s === undefined) return { ok: false, error: 'unsupported' };
     return { ok: true, value: await s.importKey('raw', raw, AES_GCM, false, USAGES) };
   } catch {
     return { ok: false, error: 'crypto_failure' };

@@ -88,3 +88,4 @@ This is the contract that lets client and server lanes run in parallel — keep 
     end with `idle`. Receiver logic unchanged.
   - Resume with a valid token replaces a socket still attached to the same slot; the server disconnects the old one
     (network switch). Contract for T05 in `events.ts` and `docs/architecture.md`; answers the open question above.
+- qa-tester: QA PASS. Report: [docs/testing/T03.md](../testing/T03.md)

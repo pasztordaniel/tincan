@@ -5,6 +5,7 @@ import {
   MAX_FRAMES_PER_WINDOW,
   MAX_MESSAGE_BYTES,
 } from '@tincan/shared';
+import { Manager } from 'socket.io-client';
 import { delay, frame, startRelay, type Harness } from './relay-harness.js';
 
 const NOT_FOUND = { ok: false, error: 'not_found' };
@@ -218,6 +219,27 @@ describe('untrusted input', () => {
     expect(await receiver.next('peer')).toEqual({ state: 'gone' });
     expect(await receiver.next('session:ended')).toEqual({ reason: 'peer_left' });
     expect(receiver.pending()).toEqual([]);
+    expect(h.relay.sessionCount).toBe(0);
+  });
+
+  it('closes a connection that sends a binary event before joining the namespace', async () => {
+    const h = await relay();
+    const manager = new Manager(h.url, {
+      transports: ['websocket'],
+      reconnection: false,
+      autoConnect: false,
+      forceNew: true,
+    });
+    await new Promise<void>((resolve, reject) =>
+      manager.open((err) => (err ? reject(err) : resolve())),
+    );
+    const engine = manager.engine;
+    const closed = new Promise<string>((resolve) => engine.once('close', resolve));
+    // A BINARY_EVENT header announcing ten attachments; socket.io would buffer them until connectTimeout.
+    const placeholders = Array.from({ length: 10 }, (_, num) => ({ _placeholder: true, num }));
+    engine.send(`510-${JSON.stringify(['frame', ...placeholders])}`);
+    for (let i = 0; i < 9; i++) engine.send(Buffer.alloc(1024));
+    expect(await closed).toBe('transport close');
     expect(h.relay.sessionCount).toBe(0);
   });
 });

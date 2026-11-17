@@ -84,8 +84,8 @@ Relay behaviour (`server/src/relay/`, T05) beyond the table:
   other events are dropped without an ack; at 60 events in one window the socket is disconnected and its session ends
   as an explicit leave (`peer_left`). Clients must not buffer frames while offline (socket.io's default send buffer
   would replay them as a burst).
-- socket.io binary packets (types 5 and 6) and binary engine.io messages disconnect the socket before they are decoded
-  (also ends its session as `peer_left`). A message above `MAX_MESSAGE_BYTES` closes the transport, which the relay
+- socket.io binary packets (types 5 and 6) and binary engine.io messages close the connection before they are decoded,
+  also before the client has joined the namespace (a bound socket's session ends as `peer_left`). A message above `MAX_MESSAGE_BYTES` closes the transport, which the relay
   treats as a drop (grace).
 - Disconnect reasons: `client namespace disconnect` ends the session at once (`peer_left`); every other reason starts
   the grace (`peer: reconnecting` to the other party). A socket replaced by a takeover is unbound before the server

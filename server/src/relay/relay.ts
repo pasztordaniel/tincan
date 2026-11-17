@@ -21,6 +21,7 @@ import { newSessionId, newToken, tokensEqual } from './tokens.js';
 export type InboundEvents = { [K in keyof ClientToServerEvents]: (...args: unknown[]) => void };
 export type RelayServer = Server<InboundEvents, ServerToClientEvents>;
 type RelaySocket = Socket<InboundEvents, ServerToClientEvents>;
+type EngineConnection = RelaySocket['conn'];
 
 type Role = 'sender' | 'receiver';
 type Ack = (result: object) => void;
@@ -307,11 +308,25 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
     [EVENTS.frame]: guarded(EVENTS.frame, onFrame),
   } as const;
 
-  io.on('connection', (socket) => {
-    // Binary attachments are never part of the protocol; cut the socket before they are decoded.
-    socket.conn.on('packet', (packet: { type: string; data?: unknown }) => {
-      if (packet.type === 'message' && isBinaryMessage(packet.data)) kick(socket);
+  /** The namespace socket on each engine.io connection, once the client has joined the namespace. */
+  const socketsByConn = new WeakMap<EngineConnection, RelaySocket>();
+
+  // Binary attachments are never part of the protocol. The engine emits `packet` before socket.io's
+  // decoder sees the data, so this cuts the connection before any attachment is buffered, also before
+  // the client has joined the namespace (socket.io would otherwise hold attachments until
+  // `connectTimeout`).
+  io.engine.on('connection', (conn: EngineConnection) => {
+    conn.on('packet', (packet: { type: string; data?: unknown }) => {
+      if (packet.type !== 'message' || !isBinaryMessage(packet.data)) return;
+      const socket = socketsByConn.get(conn);
+      // close() stops the engine from accepting further packets at once.
+      if (socket) kick(socket);
+      else conn.close();
     });
+  });
+
+  io.on('connection', (socket) => {
+    socketsByConn.set(socket.conn, socket);
 
     // A socket that never creates, joins or resumes only holds a connection; cut it. Once bound, it
     // stays connected (also after its session ends) until it leaves or drops.

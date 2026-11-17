@@ -161,6 +161,29 @@ describe('ReceiverSession', () => {
       expect(session.stage()).toBe('live');
       expect(session.openFailure()).toBeNull();
     });
+
+    it('a retry keeps lastSeq: a frame accepted during a failed attempt cannot be replayed', async () => {
+      await visit(sessionId);
+      const first = await sealer.seal({ t: 'text', text: 'old', ts: now });
+      const second = await sealer.seal({ t: 'text', text: 'new', ts: now });
+      if (!first.ok || !second.ok) throw new Error('seal');
+      // The relay delivers frames right behind the join ack, then the attempt still fails.
+      relay.join.mockImplementationOnce(async () => {
+        relay.frames$.next(first.frame);
+        relay.frames$.next(second.frame);
+        await flush();
+        return { ok: false, error: 'timeout' };
+      });
+      await session.open();
+      expect(session.stage()).toBe('gate');
+      expect(session.text()).toBe('new');
+
+      await session.open();
+      relay.frames$.next(first.frame);
+      await flush();
+      expect(session.integrityError()).toBe(true);
+      expect(session.text()).toBe('new');
+    });
   });
 
   describe('frames', () => {
@@ -287,6 +310,19 @@ describe('ReceiverSession', () => {
       await visit(sessionId);
       session.ngOnDestroy();
       expect(relay.leave).not.toHaveBeenCalled();
+    });
+
+    it('gives the slot back when the page goes away while the join is in flight', async () => {
+      await visit(sessionId);
+      let answer!: (outcome: JoinOutcome) => void;
+      relay.join.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+      const opening = session.open();
+      session.ngOnDestroy();
+      expect(relay.leave).not.toHaveBeenCalled();
+      answer({ ok: true });
+      await opening;
+      expect(relay.leave).toHaveBeenCalledOnce();
+      expect(session.stage()).toBe('gate');
     });
 
     it('leaves a joined line on destroy', async () => {

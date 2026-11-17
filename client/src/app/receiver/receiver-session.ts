@@ -93,7 +93,6 @@ export class ReceiverSession implements OnDestroy {
     return seconds < 60 ? `${seconds} s ago` : `${Math.floor(seconds / 60)} min ago`;
   });
 
-  private key: CryptoKey | null = null;
   private sessionId = '';
   private opener: FrameOpener | null = null;
   private joined = false;
@@ -113,22 +112,28 @@ export class ReceiverSession implements OnDestroy {
       this._stage.set(imported.error === 'missing_key' ? 'used' : 'invalid');
       return;
     }
-    this.key = imported.value;
     this.sessionId = sessionId;
+    // One opener for the whole visit: a retried Open must not reset `lastSeq`, or a frame accepted
+    // during a failed attempt could be replayed after the retry.
+    this.opener = this.crypto.createOpener(imported.value, sessionId);
     this._stage.set('gate');
   }
 
   /** The explicit Open click: the first (and only) thing that talks to the relay. */
   async open(): Promise<void> {
-    if (this._stage() !== 'gate' || this._joining() || this.key === null) return;
+    if (this._stage() !== 'gate' || this._joining() || this.opener === null) return;
     this._joining.set(true);
     this._openFailure.set(null);
-    this.opener = this.crypto.createOpener(this.key, this.sessionId);
     // Subscribe before joining: the relay may deliver a frame right behind the join ack.
     this.listen();
     const result = await this.relay.join(this.sessionId);
     this._joining.set(false);
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      // The page went away while the join was in flight: give the slot back instead of holding it
+      // with nobody reading (cleanup ran before `joined` was set, so it did not leave).
+      if (result.ok) this.relay.leave();
+      return;
+    }
     if (result.ok) {
       this.joined = true;
       this.lastFrameAt.set(this.now());
@@ -201,7 +206,6 @@ export class ReceiverSession implements OnDestroy {
     this.stopListening();
     if (this.typingTimer) clearTimeout(this.typingTimer);
     if (this.tickTimer) clearInterval(this.tickTimer);
-    this.key = null;
     this.opener = null;
     if (this.joined) this.relay.leave();
   }

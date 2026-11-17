@@ -2,7 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  effect,
   inject,
+  type OnDestroy,
   signal,
   viewChild,
 } from '@angular/core';
@@ -72,7 +74,7 @@ import { WarningBanner } from '../ui/warning-banner/warning-banner';
             <app-link-card [link]="link" />
           }
           <div class="thread__actions">
-            <a appButton [block]="true" routerLink="/s" (click)="joined = true">Join</a>
+            <a appButton [block]="true" routerLink="/s" (click)="onJoin($event)">Join</a>
             <button type="button" appButton="ghost" [block]="true" (click)="dialog.close()">
               Not now
             </button>
@@ -145,7 +147,7 @@ import { WarningBanner } from '../ui/warning-banner/warning-banner';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HomePage {
+export class HomePage implements OnDestroy {
   protected readonly appName = APP_NAME;
   protected readonly open = signal(false);
   protected readonly trustCues = [
@@ -160,11 +162,29 @@ export class HomePage {
 
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
+  constructor() {
+    // The session can end while the dialog is open (idle cut, relay shutdown): do not keep offering
+    // a Join for a thread that no longer exists.
+    effect(() => {
+      if (this.open() && !this.session.active() && !this.session.starting()) {
+        this.error.set(ERRORS.ended);
+        const dialog = this.dialog().nativeElement;
+        // jsdom (unit tests) lacks close(); a real browser fires `close`, which runs onClose().
+        if (typeof dialog.close === 'function') dialog.close();
+        else {
+          dialog.removeAttribute('open');
+          this.onClose();
+        }
+      }
+    });
+  }
+
   protected async openThread(): Promise<void> {
     this.error.set(null);
     const started = await this.session.start();
     if (!started.ok) {
-      this.error.set(ERRORS[started.error]);
+      // `cancelled`: the page went away (or another start ran) meanwhile; there is nothing to report.
+      if (started.error !== 'cancelled') this.error.set(ERRORS[started.error]);
       return;
     }
     this.joined = false;
@@ -175,13 +195,36 @@ export class HomePage {
     else dialog.setAttribute('open', '');
   }
 
+  /**
+   * Hands the session to the sender view, but only for a click that RouterLink turns into an in-app
+   * navigation. A modified click opens `/s` in a new tab or window (which has no session and goes
+   * home), so this page still owns the session and "Not now" must still end it.
+   */
+  protected onJoin(event: MouseEvent): void {
+    if (
+      event.button === 0 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.shiftKey &&
+      !event.altKey
+    ) {
+      this.joined = true;
+    }
+  }
+
   protected onClose(): void {
     this.open.set(false);
     if (!this.joined) this.session.end();
   }
+
+  /** Leaving home without joining (or while "New thread" is still in flight) must not leave a session open. */
+  ngOnDestroy(): void {
+    if (!this.joined) this.session.end();
+  }
 }
 
-const ERRORS: Record<StartError, string> = {
+const ERRORS: Record<Exclude<StartError, 'cancelled'> | 'ended', string> = {
+  ended: 'The thread ended before anyone joined. Start a new one.',
   crypto: 'This browser cannot create an encrypted thread (it needs a secure connection).',
   busy: 'The relay is busy right now. Try again in a moment.',
   offline: 'Could not reach the relay. Check your connection and try again.',

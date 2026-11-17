@@ -8,14 +8,22 @@ const LINK = 'http://localhost/r/AAAAAAAAAAAAAAAAAAAAAA#kkkk';
 
 function setup(outcome: StartOutcome = { ok: true }) {
   const link = signal<string | null>(null);
+  const active = signal(false);
   const session = {
     link,
+    active,
     starting: signal(false),
     start: vi.fn(() => {
-      if (outcome.ok) link.set(LINK);
+      if (outcome.ok) {
+        link.set(LINK);
+        active.set(true);
+      }
       return Promise.resolve(outcome);
     }),
-    end: vi.fn(() => link.set(null)),
+    end: vi.fn(() => {
+      link.set(null);
+      active.set(false);
+    }),
   };
   TestBed.configureTestingModule({
     providers: [
@@ -81,5 +89,65 @@ describe('HomePage', () => {
     )!;
     ghost.click();
     expect(session.end).toHaveBeenCalledOnce();
+  });
+
+  async function openDialog(root: HTMLElement, fixture: { whenStable(): Promise<unknown> }) {
+    root.querySelector<HTMLButtonElement>('main button')!.click();
+    await fixture.whenStable();
+    const dialog = root.querySelector('dialog')!;
+    // jsdom lacks close(): fire the event a real browser dispatches.
+    dialog.close = () => dialog.dispatchEvent(new Event('close'));
+    return dialog;
+  }
+
+  it('keeps owning the session after a modified Join click (new tab), so "Not now" still ends it', async () => {
+    const { fixture, root, session } = setup();
+    await fixture.whenStable();
+    const dialog = await openDialog(root, fixture);
+    const join = dialog.querySelector<HTMLAnchorElement>('a')!;
+    join.addEventListener('click', (e) => e.preventDefault());
+    join.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
+    dialog.close();
+    expect(session.end).toHaveBeenCalledOnce();
+  });
+
+  it('ends a session it still owns when the page goes away', async () => {
+    const { fixture, root, session } = setup();
+    await fixture.whenStable();
+    await openDialog(root, fixture);
+    fixture.destroy();
+    expect(session.end).toHaveBeenCalled();
+  });
+
+  it('does not end a session handed to the sender view when the page goes away', async () => {
+    const { fixture, root, session } = setup();
+    await fixture.whenStable();
+    const dialog = await openDialog(root, fixture);
+    const join = dialog.querySelector<HTMLAnchorElement>('a')!;
+    join.addEventListener('click', (e) => e.preventDefault());
+    join.click();
+    fixture.destroy();
+    expect(session.end).not.toHaveBeenCalled();
+  });
+
+  it('closes the dialog and says so when the session ends while it is open', async () => {
+    const { fixture, root, session } = setup();
+    await fixture.whenStable();
+    const dialog = await openDialog(root, fixture);
+    session.active.set(false);
+    session.link.set(null);
+    await fixture.whenStable();
+    expect(root.querySelector('dialog app-link-card')).toBeNull();
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('ended');
+    expect(dialog.querySelector('.thread')).toBeNull();
+  });
+
+  it('shows nothing for a cancelled start', async () => {
+    const { fixture, root } = setup({ ok: false, error: 'cancelled' });
+    await fixture.whenStable();
+    root.querySelector<HTMLButtonElement>('main button')!.click();
+    await fixture.whenStable();
+    expect(root.querySelector('[role="alert"]')).toBeNull();
+    expect(root.querySelector('dialog')!.hasAttribute('open')).toBe(false);
   });
 });

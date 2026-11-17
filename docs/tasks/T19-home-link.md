@@ -45,3 +45,10 @@ Every page except home has a control that takes you back to the home page, witho
   Enter, Escape, then Leave; receiver sees the cut; Back stays home), receiver leaves (sender sees the cut; Back says
   "Link already used", no fragment), no confirm after the line ended, gate goes straight home without joining.
 - qa-tester: QA PASS, see [T19 report](../testing/T19.md). Home link verified on every state on both sides, races and reconnect cases, 360/1280/zoom, light and dark; verify green, home-link spec 50/50 with --repeat-each=10. No defects; observations in the report.
+- designer: review fixes. The question is tied to the navigation id the guard holds and is withdrawn when that
+  navigation is cancelled, skipped or fails (a hash change or Back superseding it), with a real-router unit test;
+  focus goes to the home link when the question closes on its own; "Cut the line?" and "Leave and cut the line?" are
+  never open together; app specs wait on conditions instead of fixed macrotasks; shell field renamed `leaveConfirm`;
+  `watch()` JSDoc names its injection-context need; docs (security lifecycle row, architecture wording) updated.
+  E2E adds Back with and without the question and a hash change while the question is up (checked against the T13
+  fragment drop: a cancelled navigation does not end, Leave to `/` has no fragment, `/s#x` is dropped back to `/s`).

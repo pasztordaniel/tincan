@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   createServer,
   STATUS_CODES,
@@ -9,6 +9,7 @@ import { extname, join } from 'node:path';
 import express, { type ErrorRequestHandler, type Express } from 'express';
 import { Server as SocketServer } from 'socket.io';
 import { APP_NAME } from '@tincan/shared';
+import { BASE_HEADERS, securityHeaders, sendIndex, setStaticHeaders } from './headers.js';
 
 export interface AppOptions {
   /** Directory holding the built Angular app (`index.html` + assets). Optional so the API runs without a client build. */
@@ -45,6 +46,17 @@ export function isAllowedOrigin(origin: string | undefined, host: string | undef
   }
 }
 
+/** Checks the decoded path too, so `/%2eenv` cannot slip past. Undecodable paths are left to the 400 handler. */
+function hasDotSegment(path: string): boolean {
+  let decoded = path;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    // keep the raw path
+  }
+  return [path, decoded].some((p) => p.split(/[/\\]/).some((segment) => segment.startsWith('.')));
+}
+
 function sendStatus(res: express.Response, status: number): void {
   res
     .status(status)
@@ -55,6 +67,8 @@ function sendStatus(res: express.Response, status: number): void {
 export function createTincanServer(options: AppOptions = {}): TincanServer {
   const app = express();
   app.disable('x-powered-by');
+  // First, so that every response below (static, fallback, 404, errors) carries the headers.
+  app.use(securityHeaders());
 
   app.get('/healthz', (_req, res) => {
     res.json({ status: 'ok', app: APP_NAME });
@@ -62,7 +76,23 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
 
   const { clientDir } = options;
   if (clientDir && existsSync(join(clientDir, 'index.html'))) {
-    app.use(express.static(clientDir, { index: 'index.html' }));
+    // Read once: index.html is a template whose CSP nonce is filled in per response.
+    const indexTemplate = readFileSync(join(clientDir, 'index.html'), 'utf8');
+    // Dotfiles and dot-directories (.git, .env, ...) are never served, nor answered with the SPA.
+    app.use((req, res, next) => {
+      if (hasDotSegment(req.path)) {
+        sendStatus(res, 404);
+        return;
+      }
+      next();
+    });
+    app.get(['/', '/index.html'], (_req, res) => {
+      sendIndex(res, indexTemplate);
+    });
+    // `index: false`: "/" is handled above so the nonce is always injected.
+    app.use(
+      express.static(clientDir, { index: false, dotfiles: 'deny', setHeaders: setStaticHeaders }),
+    );
     // SPA fallback: client routes (e.g. /r/<id>) get index.html; anything that looks like a
     // file (has an extension) and was not found above stays a 404 instead of returning HTML.
     app.get('/{*path}', (req, res, next) => {
@@ -70,7 +100,7 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
         next();
         return;
       }
-      res.sendFile('index.html', { root: clientDir });
+      sendIndex(res, indexTemplate);
     });
   }
 
@@ -99,6 +129,15 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
     allowRequest: (req: IncomingMessage, callback) => {
       callback(null, isAllowedOrigin(req.headers.origin, req.headers.host));
     },
+  });
+
+  // socket.io answers its own paths before Express sees them, so add the headers here too (not
+  // the CSP: those responses are not documents).
+  io.engine.on('headers', (headers: Record<string, string>) => {
+    // engine.io already sets its own `Cache-Control: no-store`; do not duplicate it.
+    for (const [name, value] of Object.entries(BASE_HEADERS)) {
+      if (name !== 'Cache-Control') headers[name] = value;
+    }
   });
 
   io.on('connection', () => {

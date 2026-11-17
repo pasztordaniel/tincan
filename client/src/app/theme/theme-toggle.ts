@@ -47,8 +47,16 @@ import { ThemeService } from './theme.service';
       box-shadow: var(--shadow-sm);
       cursor: pointer;
     }
-    .toggle:hover { background: var(--color-surface-muted); }
-    svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .toggle:hover {
+      background: var(--color-surface-muted);
+    }
+    svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

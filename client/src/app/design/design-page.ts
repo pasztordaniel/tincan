@@ -145,6 +145,36 @@ const SAMPLE =
         </div>
       </section>
 
+      <section aria-labelledby="g-type">
+        <h2 id="g-type">Type</h2>
+        <div class="grid">
+          <figure class="frame card">
+            <figcaption>In use: Caveat 600 (headings, wordmark)</figcaption>
+            <div class="stack">
+              <p class="sample sample--caveat">tincan</p>
+              <p class="sample sample--caveat sample--h2">Your thread is ready</p>
+              <p>
+                Body, buttons, the pill and the live text stay in the system sans: Anyone with this
+                link can read along.
+              </p>
+              <code>--font-display: 'Caveat', var(--font-sans);</code>
+            </div>
+          </figure>
+          @for (alt of fontAlternatives; track alt.family) {
+            <figure class="frame card">
+              <figcaption>Alternative: {{ alt.caption }}</figcaption>
+              <div class="stack">
+                <p class="sample" [style.font-family]="alt.stack">tincan</p>
+                <p class="sample sample--h2" [style.font-family]="alt.stack">
+                  Your thread is ready
+                </p>
+                <code>--font-display: '{{ alt.family }}', var(--font-sans);</code>
+              </div>
+            </figure>
+          }
+        </div>
+      </section>
+
       <section aria-labelledby="g-parts">
         <h2 id="g-parts">Parts</h2>
         <div class="grid">
@@ -259,6 +289,19 @@ export class DesignPage {
   protected readonly sample = SAMPLE;
   protected readonly demoLink =
     'https://tincan.example/t/demo-3fK9xQ2m#k=placeholder-not-a-real-key';
+  /** Declared in styles.scss; switching is a one-line change to --font-display. */
+  protected readonly fontAlternatives = [
+    {
+      family: 'Kalam',
+      caption: 'Kalam 700 (felt-pen print)',
+      stack: "'Kalam', system-ui, sans-serif",
+    },
+    {
+      family: 'Patrick Hand',
+      caption: 'Patrick Hand 400 (neat marker)',
+      stack: "'Patrick Hand', system-ui, sans-serif",
+    },
+  ];
   protected readonly pickupPhase = signal<ReceiverPhase>('pickup');
   protected readonly pillStates: LineState[] = ['waiting', 'connected', 'reconnecting', 'ended'];
   protected readonly senderStates: { state: LineState; caption: string; text: string }[] = [

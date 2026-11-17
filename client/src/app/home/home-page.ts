@@ -24,7 +24,7 @@ import { LinkCard } from '../ui/link-card/link-card';
     <main class="home">
       <app-illo-home [width]="320" />
       <div class="home__intro">
-        <h1>{{ appName }}</h1>
+        <h1 class="wordmark">{{ appName }}</h1>
         <p class="home__lede">
           Two cans, one string. Type on one end, they read it live on the other, end-to-end
           encrypted.

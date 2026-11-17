@@ -18,19 +18,22 @@ sees the key or the plaintext. See [`docs/scope.md`](docs/scope.md).
 | `.claude/agents/` | Agent role definitions (PM, senior dev, dev, QA, security, designer) |
 | `.claude/skills/` | Project skills (task workflow, PR gate, crypto review, security audit) |
 
-> Until task T01 lands, `client/`, `server/`, `shared/` and `e2e/` do not exist yet.
-
 ## Commands
 ```bash
-npm install          # once, installs every workspace
-npm run dev          # client (ng serve) + server (watch), proxied
-npm start            # build client, serve everything from one Node process
-npm test             # unit tests (all workspaces)
-npm run e2e          # Playwright end-to-end tests
-npm run lint         # lint + format check + typecheck
-npm run verify       # everything CI runs, in CI order
+npm install          # once, installs every workspace and builds shared/ (prepare script)
+npx playwright install chromium   # once, browser for the e2e tests
+npm run dev          # shared (tsc watch) + server (tsx watch, :3000) + client (ng serve, :4200, proxies /socket.io)
+npm run build        # shared, then client, then server
+npm start            # build, then serve client + socket.io from one Node process (PORT, default 3000)
+npm test             # unit tests (Vitest in shared, client, server)
+npm run e2e          # Playwright end-to-end tests (Chromium, runs npm start on port 3100)
+npm run lint         # ESLint (incl. angular-eslint) + Prettier check + typecheck
+npm run format       # Prettier write + ESLint autofix
+npm run verify       # lint, test, build, e2e: everything CI runs, in CI order
 ```
-Node version: see `.nvmrc` (Node 24 LTS).
+Node version: see `.nvmrc` (Node 24 LTS; Angular 22 needs at least 24.15).
+`shared/` is consumed through its compiled `dist/`; `npm run dev` rebuilds it on change, and `build`, `test` and
+`lint` rebuild it first.
 
 ## Non-negotiables
 1. **The server never gets key material or plaintext.** The key lives only in the URL fragment and in

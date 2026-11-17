@@ -43,15 +43,15 @@ invalid link.
   - Medium: staleness used the arrival time, so a relay holding frames back and replaying them at the usual pace
     kept old text looking live forever. Freshness now comes from the encrypted `ts`, relative to the smallest
     `arrival - ts` seen (absorbs clock skew); an added delay of 15 s turns the view stale. A delay present from the
-    very first frame cannot be told from skew (security.md, Withholding / freezing). `27bd91d`
+    very first frame cannot be told from skew (security.md, Withholding / freezing). `25a843d`
   - Low: a retried Open created a new `FrameOpener` (`lastSeq` back to 0), so a frame accepted during a failed
-    attempt could be replayed after the retry. One opener per visit now. `5a4f090`
+    attempt could be replayed after the retry. One opener per visit now. `c20f955`
   - Low: a page destroyed while the join was in flight never left, holding the receiver slot with nobody reading.
-    It leaves as soon as that join resolves. `5a4f090`
+    It leaves as soon as that join resolves. `c20f955`
   - Low: `/r`, `/r/<id>/x` fell through to the `**` redirect, which keeps the fragment: the key landed in the home
-    page's address bar. Every `/r` path now reaches the receiver page (matcher), which clears it. `68ed42a`
+    page's address bar. Every `/r` path now reaches the receiver page (matcher), which clears it. `8296615`
   - Nit: after the line ended the tick kept running, "typing" could show under "line cut", and frames after a bare
-    `peer: gone` could still replace the final text. All stopped. `a490f5a`
+    `peer: gone` could still replace the final text. All stopped. `355d382`
   - Accepted, not cheaply fixable: after a join ack timeout `RelayService` disconnects explicitly. If the relay had
     bound the slot on a live socket, that ends the session (the sender sees `peer_left`, a retry shows "Nothing on
     this line"); if the connection had dropped, the slot sits in its 20 s grace and a retry shows "busy", then "Nothing

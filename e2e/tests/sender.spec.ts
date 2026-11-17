@@ -19,7 +19,8 @@ test('creating a thread never sends the key anywhere', async ({ page }) => {
   const link = await page.getByLabel('Thread link').inputValue();
   const match = /^(.+)\/r\/([A-Za-z0-9_-]{22})#([A-Za-z0-9_-]{43})$/.exec(link);
   expect(match, 'link is <origin>/r/<id>#<key>').not.toBeNull();
-  const [, , sessionId, key] = match!;
+  const sessionId = match![2]!;
+  const key = match![3]!;
 
   await page.getByRole('link', { name: 'Join' }).click();
   await expect(page).toHaveURL(/\/s$/);

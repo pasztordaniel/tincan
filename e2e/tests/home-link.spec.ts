@@ -116,6 +116,40 @@ test.describe('home link', () => {
     }
   });
 
+  test('browser Back while the line is live ends it without a question', async ({
+    browser,
+    baseURL,
+  }) => {
+    const { sender, receiver, close } = await pair(browser, baseURL!);
+    try {
+      await sender.goBack();
+      await expect(sender).toHaveURL(/\/$/);
+      await expect(sender.getByRole('button', { name: 'New thread' })).toBeVisible();
+      await expect(question(sender)).toHaveCount(0);
+      await expect(receiver.getByText('The line is cut')).toBeVisible(FAST);
+    } finally {
+      await close();
+    }
+  });
+
+  test('browser Back while the question is up wins: the line ends and the question is gone', async ({
+    browser,
+    baseURL,
+  }) => {
+    const { sender, receiver, close } = await pair(browser, baseURL!);
+    try {
+      await home(sender).click();
+      await expect(question(sender)).toBeVisible();
+      await sender.goBack();
+      await expect(sender).toHaveURL(/\/$/);
+      await expect(sender.getByRole('button', { name: 'New thread' })).toBeVisible();
+      await expect(question(sender)).toHaveCount(0);
+      await expect(receiver.getByText('The line is cut')).toBeVisible(FAST);
+    } finally {
+      await close();
+    }
+  });
+
   test('after the line has ended, home needs no confirm', async ({ browser, baseURL }) => {
     const { sender, receiver, close } = await pair(browser, baseURL!);
     try {

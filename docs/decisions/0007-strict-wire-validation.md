@@ -1,4 +1,4 @@
-# 0006 - Strict wire validation and a 96 KiB message limit
+# 0007 - Strict wire validation and a 96 KiB message limit
 
 **Context.** Both ends of the socket are untrusted: the server sees arbitrary sockets, and the client must not trust
 the relay. The first draft also set a 70 KiB frame limit next to a 64 KiB largest padding bucket, but `ct` is

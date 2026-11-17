@@ -91,5 +91,5 @@ Frame encryption:
 
 ## Limits (server-enforced)
 Max socket.io message 96 KiB (`MAX_MESSAGE_BYTES`, the `maxHttpBufferSize`; the largest legitimate frame is about
-87.5 KB because a 64 KiB bucket grows by a third as base64url, see ADR 0006), max 20 frames/s per sender, session
+87.5 KB because a 64 KiB bucket grows by a third as base64url, see ADR 0007), max 20 frames/s per sender, session
 idle TTL 1 h, reconnect grace 20 s.

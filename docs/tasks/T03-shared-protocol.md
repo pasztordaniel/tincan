@@ -21,9 +21,9 @@ This is the contract that lets client and server lanes run in parallel — keep 
     only), `guards.ts` (exact-key object check, id/token/key/iv/ct/seq/ts guards), `events.ts` (event names, error
     codes, payload and ack types, socket.io event maps, validators), `message.ts` (plaintext union + validator),
     `framing.ts` (`buildAad`, `buildAadBytes`, `paddingBucket`). Protocol section of `docs/architecture.md` rewritten
-    to match; ADR 0006 (proposed).
+    to match; ADR 0007 (proposed).
   - Contract refinements vs. the earlier doc: message limit 96 KiB instead of 70 KiB (a 64 KiB bucket is ~87.5 KB as
-    base64url, see ADR 0006); `ct` must decode to exactly bucket + 16 B; every ack is `{ ok: true, ... }` or
+    base64url, see ADR 0007); `ct` must decode to exactly bucket + 16 B; every ack is `{ ok: true, ... }` or
     `{ ok: false, error }`; `frame` has an ack; acks carry no peer state, the server emits `peer` after every
     successful create/join/resume; resume has a single `not_found` error (no token oracle); `seq` starts at 1;
     explicit leave = `socket.disconnect()` (server reason `client namespace disconnect`) -> `peer_left` at once.
@@ -37,7 +37,7 @@ This is the contract that lets client and server lanes run in parallel — keep 
     `npm run verify` green.
   - For the security reviewer: (1) `hasExactKeys` in `guards.ts` (prototype check, own data properties only,
     descriptor reads), (2) canonical-only base64url decode and the trailing-bit check in `isBase64Url`,
-    (3) `CIPHERTEXT_LENGTHS` / `isCiphertext` and the 96 KiB limit (ADR 0006), (4) `buildAad` input validation and
+    (3) `CIPHERTEXT_LENGTHS` / `isCiphertext` and the 96 KiB limit (ADR 0007), (4) `buildAad` input validation and
     field separation, (5) resume error collapsing, (6) `MAX_TEXT_LENGTH` worst-case byte math in `constants.ts`.
   - Open questions: idle TTL cannot tell beats from text (by design the relay can't), so a session with an open
     sender tab never idles out; do we want an absolute max session lifetime? Should resume replace a still-attached

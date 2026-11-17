@@ -6,8 +6,8 @@ CSP (`img-src 'self' data:` allows data images, but we do not need one), no `inn
 `bypassSecurityTrust*` (AGENTS.md, non-negotiables 2 and 3). The payload is the whole link, key included.
 
 Options:
-1. `qrcode-generator` 2.0.x: MIT, no dependencies, one file (about 20 KB minified, tree-shaken into the client
-   bundle), ships TypeScript types, exposes the module matrix (`getModuleCount`, `isDark`), and the algorithm
+1. `qrcode-generator` 2.0.x: MIT, no dependencies, one file (about 21 KB minified / 8 KB gzip in the initial
+   bundle; not tree-shakable: one closure, so the unused `create*Tag` / `createDataURL` ship as dead code), ships TypeScript types, exposes the module matrix (`getModuleCount`, `isDark`), and the algorithm
    has been stable for years (the maintainer still publishes releases).
 2. `qrcode`: MIT, but pulls `dijkstrajs`, `pngjs` and `yargs` (a CLI), and its browser build is larger; most of
    that surface is unused here.

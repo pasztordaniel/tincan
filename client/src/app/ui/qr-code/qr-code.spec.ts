@@ -31,15 +31,21 @@ describe('qrShape', () => {
 
   it('encodes non-ASCII payloads as UTF-8, not as truncated UTF-16 units', () => {
     const text = 'https://tincan.example/r/\u00e9\u20ac\u{1F600}#k';
-    const utf8 = qrcode(0, 'M');
-    utf8.addData(String.fromCharCode(...new TextEncoder().encode(text)), 'Byte');
-    utf8.make();
-    const n = utf8.getModuleCount();
-    const expected = new Set<string>();
-    for (let r = 0; r < n; r++)
-      for (let c = 0; c < n; c++)
-        if (utf8.isDark(r, c)) expected.add(`${r + QR_QUIET_ZONE},${c + QR_QUIET_ZONE}`);
-    expect(darkModules(qrShape(text).path)).toEqual(expected);
+    // The same text as UTF-8 bytes written out by hand, one Latin-1 character per byte.
+    const bytes = 'https://tincan.example/r/\xc3\xa9\xe2\x82\xac\xf0\x9f\x98\x80#k';
+    const modules = (data: string): Set<string> => {
+      const qr = qrcode(0, 'M');
+      qr.addData(data, 'Byte');
+      qr.make();
+      const out = new Set<string>();
+      for (let r = 0; r < qr.getModuleCount(); r++)
+        for (let c = 0; c < qr.getModuleCount(); c++)
+          if (qr.isDark(r, c)) out.add(`${r + QR_QUIET_ZONE},${c + QR_QUIET_ZONE}`);
+      return out;
+    };
+    expect(darkModules(qrShape(text).path)).toEqual(modules(bytes));
+    // A naive addData(text) would keep only the low byte of each UTF-16 unit.
+    expect(darkModules(qrShape(text).path)).not.toEqual(modules(text));
   });
 
   it('encodes different payloads differently', () => {

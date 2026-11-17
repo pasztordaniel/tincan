@@ -29,7 +29,7 @@ export const hasSenderSession: CanActivateFn = () =>
           <app-link-card class="sender__link" [link]="link" />
           <!-- Rendered only while waiting: once the receiver is connected, the line is cut or the
                session ends, the panel is destroyed and the QR (and its open state) is gone. -->
-          <app-qr-panel class="sender__link" [link]="link" />
+          <app-qr-panel class="sender__qr" [link]="link" />
         }
       }
     </main>
@@ -37,12 +37,14 @@ export const hasSenderSession: CanActivateFn = () =>
   styles: `
     .sender {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--space-4);
       max-width: var(--content-width);
       margin-inline: auto;
       padding-bottom: var(--space-5);
     }
-    .sender__link {
+    .sender__link,
+    .sender__qr {
       padding-inline: var(--space-4);
     }
   `,

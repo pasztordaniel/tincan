@@ -43,6 +43,7 @@ test('the QR code is hidden by default, local, decodes to the exact link, and hi
 
     // Decode what is on screen: it must be exactly the receiver link.
     expect(await decode(svg)).toBe(link);
+    expect(traffic.urls.length).toBe(requestsBefore);
 
     // The receiver connects: the QR (and the link card) disappear.
     await r.page.goto(link);
@@ -70,6 +71,27 @@ test('the QR code stays readable on a light ground in dark mode at 360 px', asyn
     const box = await svg.boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(200);
     expect(box!.x + box!.width).toBeLessThanOrEqual(360);
+    expect(await decode(svg)).toBe(link);
+  } finally {
+    await context.close();
+  }
+});
+
+test('the QR code fits a 200 px wide viewport without horizontal scroll and still decodes', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 200, height: 800 } });
+  const page = await context.newPage();
+  try {
+    const { link } = await startThread(page);
+    await page.getByRole('button', { name: 'Show QR code' }).click();
+    const svg = page.getByRole('img', { name: 'QR code for the receiver link' });
+    await expect(svg).toBeVisible();
+    const box = await svg.boundingBox();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(200);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
     expect(await decode(svg)).toBe(link);
   } finally {
     await context.close();

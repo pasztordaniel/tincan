@@ -20,7 +20,7 @@ let nextId = 0;
         [attr.aria-expanded]="open()"
         [attr.aria-controls]="regionId"
         [attr.aria-describedby]="hintId"
-        (click)="open.set(!open())"
+        (click)="open.update((o) => !o)"
       >
         {{ open() ? 'Hide QR code' : 'Show QR code' }}
       </button>
@@ -35,6 +35,7 @@ let nextId = 0;
   styles: `
     .qrp {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       justify-items: start;
       gap: var(--space-2);
     }

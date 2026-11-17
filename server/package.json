@@ -1,0 +1,29 @@
+{
+  "name": "@tincan/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "tincan relay: serves the built client and relays encrypted frames over socket.io.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "serve": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tincan/shared": "*",
+    "express": "^5.3.0",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.2",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.2",
+    "vitest": "^5.1.0"
+  }
+}

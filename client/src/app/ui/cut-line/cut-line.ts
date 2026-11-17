@@ -36,7 +36,7 @@ let nextId = 0;
           This ends it for both of you. The key is dropped and nothing more is sent.
         </p>
         <div class="cut__actions">
-          <button type="button" appButton (click)="confirm()">Cut it</button>
+          <button type="button" appButton="danger" (click)="confirm()">Cut it</button>
           <button #keep type="button" appButton="secondary" (click)="cancel()">Keep talking</button>
         </div>
       </div>

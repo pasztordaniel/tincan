@@ -14,7 +14,9 @@ accidental taps by an inline two-step confirm (no browser dialog).
 - The button turns into "Cut the line? / Cut it / Keep talking". Escape or Keep talking backs out; focus moves to
   "Keep talking" when the question opens and back to the trigger on dismissal.
 - Sender: key, link and timers wiped, explicit relay leave. Receiver: key wiped through the same cleanup as `pagehide`,
-  explicit relay leave. The peer gets `peer_left` at once and shows its existing ended state.
+  explicit relay leave. While connected the peer gets `peer_left` at once and shows its existing ended state; while the
+  cutting side is reconnecting or offline the cut is local at once and the peer learns of it when the 20 s grace runs out.
+- After the cut, focus moves to the ended banner (or heading on the receiver's cut screen).
 - The side that cut shows "You cut the line"; both keep the last text readable (the sender's box read-only).
 - Unit tests for both screens, pages and sessions; e2e with two contexts; `/design` lists the new states.
 
@@ -46,3 +48,11 @@ accidental taps by an inline two-step confirm (no browser dialog).
     (`PageLifecycle` calls the sender's `end()` and the receiver's `hangUp()`). No new URL, storage, log or CSP surface (component styles only, no inline handlers).
   - Low: cutting while `reconnecting`/`offline` cannot deliver the explicit disconnect, so the peer sees
     `peer_timeout` after the relay grace, not `peer_left` at once. Local wipe is still immediate. Doc wording only.
+- dev: review fixes.
+  - Focus moves to the ended banner (`tabindex="-1"`) after the user's own cut on both screens, and to the heading of
+    the receiver's cut screen (`takeFocus`); only after a live to ended change, so `/design` never steals focus.
+  - `peer_left` copy is now "The sender cut the line."; `ReceiverSession.cutByYou` is a computed.
+  - New `danger` button variant (`--color-danger*` tokens, light and dark, AA) used for "Cut it"; shown on `/design`.
+  - Known edge, accepted: the sender's idle countdown keeps ticking under an open confirm, so the line can be cut by
+    the idle clock while the question is showing.
+  - Doc wording: `peer_left` is immediate only while connected (see Acceptance and architecture.md).

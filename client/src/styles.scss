@@ -51,6 +51,9 @@
   --color-primary: #2f6b73; /* white text 6.1:1 */
   --color-primary-hover: #24575e;
   --color-on-primary: #ffffff;
+  --color-danger: #a8321a; /* white text 7.2:1 */
+  --color-danger-hover: #8a2814;
+  --color-on-danger: #ffffff;
   --color-primary-soft: #dcefee;
 
   --color-focus: #3f5bd9; /* 5.3:1 on bg */
@@ -158,6 +161,9 @@
   --color-primary: #7cc4c9;
   --color-primary-hover: #9bd5d9;
   --color-on-primary: #10272a;
+  --color-danger: #ff9a82; /* #3a1208 text 8.6:1 */
+  --color-danger-hover: #ffb4a2;
+  --color-on-danger: #3a1208;
   --color-primary-soft: #1f3638;
   --color-focus: #9db1ff;
   --tone-waiting-bg: #2c2748;
@@ -344,6 +350,17 @@ textarea {
 
   &:hover:not(:disabled) {
     background-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.btn--danger {
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+  box-shadow: var(--shadow-sm);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-danger-hover);
     box-shadow: var(--shadow-md);
   }
 }

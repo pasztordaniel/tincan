@@ -230,6 +230,7 @@ const SAMPLE =
                 <button type="button" appButton>Primary</button>
                 <button type="button" appButton="secondary">Secondary</button>
                 <button type="button" appButton="ghost">Ghost</button>
+                <button type="button" appButton="danger">Danger</button>
                 <button type="button" appButton disabled>Disabled</button>
               </div>
             </div>

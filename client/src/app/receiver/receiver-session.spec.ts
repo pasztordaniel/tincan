@@ -351,6 +351,7 @@ describe('ReceiverSession', () => {
       await openLine();
       await send({ t: 'text', text: 'bye', ts: now });
       relay.ended.set('peer_left');
+      expect(session.cutByYou()).toBe(false);
       expect(session.text()).toBe('bye');
     });
   });
@@ -396,6 +397,7 @@ describe('ReceiverSession', () => {
       relay.ended.set('left');
       expect(session.lineState()).toBe('ended');
       expect(session.endReason()).toBe('left');
+      expect(session.cutByYou()).toBe(true);
       // The key is gone: a frame the transport still delivered is not decrypted.
       await send({ t: 'text', text: 'late', ts: now });
       expect(session.text()).toBe('last words');

@@ -1,4 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  viewChild,
+} from '@angular/core';
 import { MAX_TEXT_LENGTH } from '@tincan/shared';
 import { IlloLineCut, IlloLineSlack, IlloSender } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
@@ -79,6 +92,8 @@ let nextId = 0;
 
       @if (ended()) {
         <app-warning-banner
+          #endedBanner
+          tabindex="-1"
           class="screen__full"
           tone="info"
           [heading]="cutByYou() ? 'You cut the line' : 'The line is cut'"
@@ -185,6 +200,27 @@ export class SenderScreen {
   readonly text = model('');
 
   protected readonly ended = computed(() => this.state() === 'ended');
+
+  private readonly endedBanner = viewChild('endedBanner', { read: ElementRef });
+  private sawOpenLine = false;
+
+  constructor() {
+    const injector = inject(Injector);
+    // Focus follows the user's own cut: the button they pressed is gone. Only after a live -> ended
+    // change, so a screen that is merely rendered as ended (see /design) never steals focus.
+    effect(() => {
+      const ended = this.ended();
+      if (!ended) this.sawOpenLine = true;
+      else if (this.cutByYou() && this.sawOpenLine) {
+        this.sawOpenLine = false;
+        afterNextRender(
+          () => (this.endedBanner()?.nativeElement as HTMLElement | undefined)?.focus(),
+          { injector },
+        );
+      }
+    });
+  }
+
   protected readonly countdown = computed(() => {
     const total = Math.max(0, Math.ceil(this.idleSecondsLeft()));
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;

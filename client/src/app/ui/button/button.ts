@@ -1,6 +1,6 @@
 import { Directive, computed, input } from '@angular/core';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /**
  * Styles a native <button> or <a> as a tincan button. A directive rather than a wrapper component, so

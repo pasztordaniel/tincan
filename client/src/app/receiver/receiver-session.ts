@@ -71,6 +71,9 @@ export class ReceiverSession implements OnDestroy {
     return this._stage() === 'live' ? this.relay.ended() : null;
   });
 
+  /** The line ended because this side cut it on purpose (the relay's own `left`). */
+  readonly cutByYou = computed(() => this.endReason() === 'left');
+
   readonly lineState = computed<LineState>(() => {
     if (this.relay.ended() !== null) return 'ended';
     const status = this.relay.status();
@@ -155,7 +158,8 @@ export class ReceiverSession implements OnDestroy {
 
   /**
    * "Cut the line": the receiver hangs up on purpose. The key, the listeners and the timers go through
-   * the same `cleanup()` as `pagehide` and the relay is told (`peer_left` for the sender). Unlike
+   * the same `cleanup()` as `pagehide` and the relay is told (`peer_left` for the sender at once while connected; while reconnecting or offline the
+   * disconnect cannot be delivered, so the sender learns of it when the 20 s grace runs out). Unlike
    * `pagehide` the page stays, and like every other ended state (T09) it keeps the last text readable.
    */
   cutLine(): void {

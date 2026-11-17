@@ -153,7 +153,8 @@ export class SenderSession implements OnDestroy {
 
   /**
    * "Cut the line": ends the session on purpose. Same wipe as the idle cut (key, timers, link) and an
-   * explicit leave, so the receiver sees `peer_left` at once; the text stays on screen, read-only.
+   * explicit leave: the receiver sees `peer_left` at once while connected, and only after the 20 s grace if this
+   * side is reconnecting or offline (the disconnect cannot be delivered then); the text stays on screen, read-only.
    */
   cutLine(): void {
     if (!this._active() || this.state() === 'ended') return;

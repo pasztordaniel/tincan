@@ -34,6 +34,7 @@ async function mount(id: string, hash: string | null) {
     ],
   });
   const fixture = TestBed.createComponent(ReceiverPage);
+  document.body.appendChild(fixture.nativeElement as HTMLElement);
   await fixture.whenStable();
   return { fixture, relay, root: fixture.nativeElement as HTMLElement };
 }
@@ -45,7 +46,10 @@ async function newKeyString(): Promise<string> {
 }
 
 describe('ReceiverPage', () => {
-  afterEach(() => history.replaceState(null, '', '/'));
+  afterEach(() => {
+    history.replaceState(null, '', '/');
+    document.body.replaceChildren();
+  });
 
   it('shows the Open step first, joins only on click, then shows the line', async () => {
     const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
@@ -112,14 +116,14 @@ describe('ReceiverPage', () => {
     named('Cut the line').click();
     await fixture.whenStable();
     named('Cut it').click();
-    // The real relay sets this in leave(); the fake does it by hand.
-    relay.leave.mockImplementation(() => undefined);
     expect(relay.leave).toHaveBeenCalledOnce();
+    // The real relay sets these in leave(); the fake does it by hand.
     relay.status.set('ended');
     relay.ended.set('left');
     await fixture.whenStable();
     expect(root.textContent).toContain('You cut the line');
     expect(root.querySelector('app-cut-line')).toBeNull();
+    expect(document.activeElement).toBe(root.querySelector('h2'));
     expect(relay.frames$.observed).toBe(false);
   });
 
@@ -131,5 +135,6 @@ describe('ReceiverPage', () => {
     relay.ended.set('left');
     await fixture.whenStable();
     expect(root.querySelector('h2')?.textContent).toBe('You cut the line');
+    expect(document.activeElement).toBe(root.querySelector('h2'));
   });
 });

@@ -49,6 +49,7 @@ test.describe('cut the line', () => {
       await expect(sender.getByRole('group', { name: 'Cut the line?' })).toBeVisible();
       await expect(sender.getByRole('button', { name: 'Keep talking' })).toBeFocused();
       await expect(receiver.getByText('The line is cut')).toHaveCount(0);
+      await expect(receiver.getByRole('button', { name: 'Cut the line' })).toBeVisible();
       await sender.getByRole('button', { name: 'Cut it' }).click();
 
       await expect(receiver.getByText('The line is cut')).toBeVisible(FAST);
@@ -56,6 +57,7 @@ test.describe('cut the line', () => {
       await expect(receiver.getByRole('button', { name: 'Cut the line' })).toHaveCount(0);
 
       await expect(sender.getByText('You cut the line')).toBeVisible(FAST);
+      await expect(sender.locator('app-warning-banner')).toBeFocused();
       await expect(sender.getByLabel('Text to send')).toHaveValue('last words');
       await expect(sender.getByLabel('Text to send')).not.toBeEditable();
       await expect(sender.getByRole('button', { name: 'Cut the line' })).toHaveCount(0);
@@ -86,6 +88,7 @@ test.describe('cut the line', () => {
       await sender.getByRole('button', { name: 'Cut the line' }).click();
       await sender.keyboard.press('Escape');
       await expect(sender.getByRole('button', { name: 'Cut the line' })).toBeFocused();
+      await expect(sender.getByRole('group', { name: 'Cut the line?' })).toHaveCount(0);
 
       await receiver.getByRole('button', { name: 'Cut the line' }).click();
       await receiver.getByRole('button', { name: 'Keep talking' }).click();

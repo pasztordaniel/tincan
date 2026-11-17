@@ -3,12 +3,15 @@ import { ReceiverScreen } from './receiver-screen';
 
 async function render(inputs: Record<string, unknown>) {
   const fixture = TestBed.createComponent(ReceiverScreen);
+  document.body.appendChild(fixture.nativeElement as HTMLElement);
   for (const [key, value] of Object.entries(inputs)) fixture.componentRef.setInput(key, value);
   await fixture.whenStable();
   return { fixture, root: fixture.nativeElement as HTMLElement };
 }
 
 describe('ReceiverScreen', () => {
+  afterEach(() => document.body.replaceChildren());
+
   it('starts at the Pick up step without showing any text', async () => {
     const { fixture, root } = await render({ text: 'secret' });
     expect(root.textContent).not.toContain('secret');
@@ -94,6 +97,14 @@ describe('ReceiverScreen', () => {
       expect(cut).toBe(0);
       named(root, 'Cut it')!.click();
       expect(cut).toBe(1);
+    });
+
+    it('moves focus to the ended banner after the user cuts', async () => {
+      const { fixture, root } = await render({ phase: 'live', text: 'x' });
+      fixture.componentRef.setInput('state', 'ended');
+      fixture.componentRef.setInput('cutByYou', true);
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(root.querySelector('app-warning-banner'));
     });
 
     it('says who cut the line and keeps the last text', async () => {

@@ -3,6 +3,7 @@ import { SenderScreen } from './sender-screen';
 
 async function render(state: string, text = '') {
   const fixture = TestBed.createComponent(SenderScreen);
+  document.body.appendChild(fixture.nativeElement as HTMLElement);
   fixture.componentRef.setInput('state', state);
   fixture.componentRef.setInput('text', text);
   await fixture.whenStable();
@@ -10,6 +11,8 @@ async function render(state: string, text = '') {
 }
 
 describe('SenderScreen', () => {
+  afterEach(() => document.body.replaceChildren());
+
   it('shows an editable writing area with the ready-to-type caret while waiting', async () => {
     const { root } = await render('waiting');
     const area = root.querySelector('textarea')!;
@@ -90,6 +93,18 @@ describe('SenderScreen', () => {
       await fixture.whenStable();
       find('Cut it').click();
       expect(cut).toBe(1);
+    });
+
+    it('moves focus to the ended banner after the user cuts, but not for a screen rendered as ended', async () => {
+      const { fixture, root } = await render('ended', 'x');
+      fixture.componentRef.setInput('cutByYou', true);
+      await fixture.whenStable();
+      expect(document.activeElement).not.toBe(root.querySelector('app-warning-banner'));
+      const live = await render('connected', 'x');
+      live.fixture.componentRef.setInput('state', 'ended');
+      live.fixture.componentRef.setInput('cutByYou', true);
+      await live.fixture.whenStable();
+      expect(document.activeElement).toBe(live.root.querySelector('app-warning-banner'));
     });
 
     it('says who cut the line once ended', async () => {

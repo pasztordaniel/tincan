@@ -5,6 +5,7 @@ import {
   isCreateResult,
   isFrame,
   isFrameResult,
+  isJoinRequest,
   isJoinResult,
   isPeerEvent,
   isResumeResult,
@@ -28,11 +29,10 @@ export type RelayEndReason = EndReason | 'left' | 'session_lost' | 'grace_expire
 /** Local failures on top of the server's error codes. */
 export type LocalError = 'offline' | 'timeout' | 'protocol';
 
+/** Tokens are not part of the outcomes: only this service needs them (for resume). */
 export type CreateOutcome =
-  | { ok: true; sessionId: string; senderToken: string }
-  | { ok: false; error: CreateError | LocalError };
-export type JoinOutcome =
-  { ok: true; receiverToken: string } | { ok: false; error: JoinError | LocalError };
+  { ok: true; sessionId: string } | { ok: false; error: CreateError | LocalError };
+export type JoinOutcome = { ok: true } | { ok: false; error: JoinError | LocalError };
 /**
  * - `accepted`: the relay acked the frame (not "delivered").
  * - `queued`: not connected; kept as the single latest frame and sent after a successful resume.
@@ -123,11 +123,12 @@ export class RelayService implements OnDestroy {
       return this.failOpen(typeof result === 'string' ? result : result.error);
     }
     this.bind(socket, { sessionId: result.sessionId, token: result.senderToken });
-    return { ok: true, sessionId: result.sessionId, senderToken: result.senderToken };
+    return { ok: true, sessionId: result.sessionId };
   }
 
-  /** Claims the receiver slot of `sessionId`. */
+  /** Claims the receiver slot of `sessionId`. A malformed id is refused locally, without connecting. */
   async join(sessionId: string): Promise<JoinOutcome> {
+    if (!isJoinRequest({ sessionId })) return { ok: false, error: 'bad_request' };
     const socket = await this.open();
     if (!socket) return { ok: false, error: 'offline' };
     const result = await this.ack(
@@ -141,7 +142,7 @@ export class RelayService implements OnDestroy {
       return this.failOpen(typeof result === 'string' ? result : result.error);
     }
     this.bind(socket, { sessionId, token: result.receiverToken });
-    return { ok: true, receiverToken: result.receiverToken };
+    return { ok: true };
   }
 
   /**

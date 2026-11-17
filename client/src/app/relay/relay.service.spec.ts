@@ -126,7 +126,7 @@ describe('RelayService', () => {
     socket.answers.set('session:create', { ok: true, sessionId: SID, senderToken: TOK });
     socket.serverConnect();
     const result = await p;
-    expect(result).toEqual({ ok: true, sessionId: SID, senderToken: TOK });
+    expect(result).toEqual({ ok: true, sessionId: SID });
   }
 
   it('creates a session and reports connected', async () => {
@@ -140,7 +140,7 @@ describe('RelayService', () => {
     socket = sock(0);
     socket.answers.set('session:join', { ok: true, receiverToken: TOK });
     socket.serverConnect();
-    expect(await p).toEqual({ ok: true, receiverToken: TOK });
+    expect(await p).toEqual({ ok: true });
     expect(socket.emitted[0]).toMatchObject({ event: 'session:join' });
     expect(socket.emitted[0]?.args[0]).toEqual({ sessionId: SID });
   });
@@ -456,7 +456,7 @@ describe('RelayService', () => {
       expect(second).not.toBe(first);
       second.answers.set('session:create', { ok: true, sessionId: SID, senderToken: TOK2 });
       second.serverConnect();
-      expect(await p).toMatchObject({ ok: true, senderToken: TOK2 });
+      expect(await p).toEqual({ ok: true, sessionId: SID });
       expect(relay.status()).toBe('connected');
       expect(relay.ended()).toBeNull();
     });
@@ -475,7 +475,7 @@ describe('RelayService', () => {
       expect(await first).toEqual({ ok: false, error: 'offline' });
       expect(b.disconnectCalls).toBe(0);
       b.serverConnect();
-      expect(await second).toEqual({ ok: true, receiverToken: TOK });
+      expect(await second).toEqual({ ok: true });
       expect(relay.status()).toBe('connected');
     });
 
@@ -596,6 +596,27 @@ describe('RelayService', () => {
       expect(vi.getTimerCount()).toBe(0);
       expect(relay.ended()).toBe('left');
     });
+  });
+
+  it('refuses a malformed session id without connecting', async () => {
+    expect(await relay.join('not/a.session')).toEqual({ ok: false, error: 'bad_request' });
+    expect(sockets).toHaveLength(0);
+  });
+
+  it('does not expose tokens in outcomes, signals or events', async () => {
+    const seen: unknown[] = [];
+    relay.frames$.subscribe((x) => seen.push(x));
+    relay.peer$.subscribe((x) => seen.push(x));
+    relay.protocolErrors$.subscribe((x) => seen.push(x));
+    const p = relay.create();
+    socket = sock(0);
+    socket.answers.set('session:create', { ok: true, sessionId: SID, senderToken: TOK });
+    socket.serverConnect();
+    seen.push(await p);
+    socket.fire('peer', { state: 'connected' });
+    socket.fire('frame', { bad: TOK });
+    seen.push(relay.status(), relay.peer(), relay.ended(), relay.protocolErrorCount());
+    expect(JSON.stringify(seen)).not.toContain(TOK);
   });
 
   it('never writes tokens to storage', async () => {

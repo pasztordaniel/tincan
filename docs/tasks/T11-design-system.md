@@ -62,3 +62,4 @@ No remote fonts or assets (CSP). Screens, states and illustrations: [`docs/desig
   for `noUncheckedIndexedAccess` (pill demo). `npm run verify` green; initial total 280.38 kB (73.63 kB
   transfer) with main's T03/T06 code included.
 - qa-tester: QA PASS. Report: [docs/testing/T11.md](../testing/T11.md). Real Chromium on the production build (CSP active), 360 and 1280 px, light and dark: no overflow, console errors or CSP violations; Pacifico loads; theme toggle persists; dialog focus and Esc behave; `/design` states render; reduced motion runs no animations; manual contrast and landmark checks clean (no axe installed). Observation only: the writer caret blink is an infinite animation (docs say all one-shot).
+- orchestrator: rebased onto `main` after T04 merged; `npm run verify` green; corrected the motion note in `docs/design.md` (caret blink). PR opened.

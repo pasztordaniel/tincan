@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| dev | T08 | in-review | feat/T18-qr-code |
+| dev | T08 | pr-open | feat/T18-qr-code |
 
 ## Goal
 The sender can show the receiver link as a QR code, so a phone held next to them can open it. Generated locally

@@ -28,3 +28,10 @@ No remote fonts or assets (CSP). Screens, states and illustrations: [`docs/desig
   Open questions for the maintainer: receiver "waiting" pill copy (brief has none, using "Picking up...");
   whether `/design` ships in production; Join currently goes to `/design#sender` until T08 adds the sender
   route; link path shape `/t/<id>#k=<key>` is a mock for T04/T07 to replace.
+- designer: review changes from the maintainer. Headings and the wordmark use Caveat 600 (self-hosted
+  `@fontsource`, OFL, latin woff2 only, `size-adjust` keeps heading sizes); body, pill, buttons and live text
+  stay in the system sans; Kalam and Patrick Hand are shown on `/design` and swap in with one `--font-display`
+  line. Two-state light/dark toggle starting from the system theme (`ThemeService`, applied in an app
+  initializer, CSP-safe, only the UI preference in `localStorage` under `tincan.theme`). Illustrations redrawn
+  to the maintainer's sketch: left can on its side, right can upright and tilted, string from each closed
+  bottom with one cursive "e" loop, shared poses in `can-pose.ts`. Lint and unit tests green.

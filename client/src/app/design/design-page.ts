@@ -149,15 +149,15 @@ const SAMPLE =
         <h2 id="g-type">Type</h2>
         <div class="grid">
           <figure class="frame card">
-            <figcaption>In use: Caveat 600 (headings, wordmark)</figcaption>
+            <figcaption>In use: Pacifico 400 (headings, wordmark)</figcaption>
             <div class="stack">
-              <p class="sample sample--caveat">tincan</p>
-              <p class="sample sample--caveat sample--h2">Your thread is ready</p>
+              <p class="sample sample--display">tincan</p>
+              <p class="sample sample--display sample--h2">Your thread is ready</p>
               <p>
                 Body, buttons, the pill and the live text stay in the system sans: Anyone with this
                 link can read along.
               </p>
-              <code>--font-display: 'Caveat', var(--font-sans);</code>
+              <code>--font-display: 'Pacifico', var(--font-sans);</code>
             </div>
           </figure>
           @for (alt of fontAlternatives; track alt.family) {
@@ -241,11 +241,11 @@ const SAMPLE =
     }
     .sample {
       font-size: var(--text-2xl);
-      line-height: var(--leading-tight);
+      line-height: var(--leading-display);
       font-weight: var(--weight-display);
       font-synthesis: none;
     }
-    .sample--caveat {
+    .sample--display {
       font-family: var(--font-display);
     }
     .sample--h2 {
@@ -314,14 +314,9 @@ export class DesignPage {
   /** Declared in styles.scss; switching is a one-line change to --font-display. */
   protected readonly fontAlternatives = [
     {
-      family: 'Kalam',
-      caption: 'Kalam 700 (felt-pen print)',
-      stack: "'Kalam', system-ui, sans-serif",
-    },
-    {
-      family: 'Patrick Hand',
-      caption: 'Patrick Hand 400 (neat marker)',
-      stack: "'Patrick Hand', system-ui, sans-serif",
+      family: 'Caveat',
+      caption: 'Caveat 600 (quick marker, lighter)',
+      stack: "'Caveat', system-ui, sans-serif",
     },
   ];
   protected readonly pickupPhase = signal<ReceiverPhase>('pickup');

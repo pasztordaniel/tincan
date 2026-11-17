@@ -8,10 +8,20 @@
 
 /*
  * Self-hosted heading fonts (OFL, from @fontsource): latin subset, one weight each, so the CSP can stay
- * font-src 'self'. Browsers only download a face when text actually uses it, so the two alternatives
- * cost nothing outside /design. size-adjust evens out the very different x-heights so headings keep
- * their size and line height whichever face is active.
+ * font-src 'self'. Browsers only download a face when text actually uses it, so the Caveat alternative
+ * costs nothing outside /design. size-adjust evens out the very different letter sizes so headings keep
+ * their size and rhythm whichever face is active.
  */
+@font-face {
+  font-family: 'Pacifico';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  /* Pacifico is a heavy brush script with a tall x-height; scaled down it stops shouting. */
+  size-adjust: 84%;
+  src: url('@fontsource/pacifico/files/pacifico-latin-400-normal.woff2') format('woff2');
+}
+
 @font-face {
   font-family: 'Caveat';
   font-style: normal;
@@ -19,24 +29,6 @@
   font-display: swap;
   size-adjust: 122%;
   src: url('@fontsource/caveat/files/caveat-latin-600-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Kalam';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  size-adjust: 92%;
-  src: url('@fontsource/kalam/files/kalam-latin-700-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Patrick Hand';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  size-adjust: 108%;
-  src: url('@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff2') format('woff2');
 }
 
 :root {
@@ -90,9 +82,9 @@
   /*
    * Type. Headings and the wordmark use a self-hosted handwritten face (a label scribbled on the can);
    * everything people must read quickly stays in the system sans. Swap the heading face by changing
-   * --font-display to another family declared below.
+   * --font-display to another family declared above.
    */
-  --font-display: 'Caveat', var(--font-sans);
+  --font-display: 'Pacifico', var(--font-sans);
   --font-sans:
     system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
@@ -103,11 +95,12 @@
   --text-xl: 1.625rem; /* 26 */
   --text-2xl: 2.125rem; /* 34 */
   --leading-tight: 1.2;
+  --leading-display: 1.3; /* room for the script's swashes */
   --leading-normal: 1.5;
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-bold: 650;
-  --weight-display: 600;
+  --weight-display: 400; /* the only weight Pacifico has */
 
   /* Spacing: 4px base. */
   --space-1: 0.25rem;
@@ -220,7 +213,7 @@ h3,
 .wordmark {
   margin: 0;
   font-family: var(--font-display);
-  line-height: var(--leading-tight);
+  line-height: var(--leading-display);
   font-weight: var(--weight-display);
   /* Each face ships one weight; never let the browser smear a fake bold over handwriting. */
   font-synthesis: none;

@@ -6,11 +6,11 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | ID | Task | Owner | Depends on | Status |
 |---|---|---|---|---|
 | [T01](T01-monorepo-scaffold.md) | Monorepo scaffold | senior-dev | — | done |
-| [T02](T02-ci-pipeline.md) | CI pipeline + branch protection | dev | T01 | in-review |
-| [T03](T03-shared-protocol.md) | Shared protocol contract | senior-dev | T01 | backlog |
+| [T02](T02-ci-pipeline.md) | CI pipeline + branch protection | dev | T01 | done |
+| [T03](T03-shared-protocol.md) | Shared protocol contract | senior-dev | T01 | in-review |
 | [T04](T04-crypto-core.md) | Crypto core | senior-dev | T03 | backlog |
 | [T05](T05-relay-server.md) | Relay server | dev | T03 | backlog |
-| [T06](T06-security-headers.md) | Security headers + static serving | dev | T01 | in-review |
+| [T06](T06-security-headers.md) | Security headers + static serving | dev | T01 | done |
 | [T07](T07-relay-client.md) | Client relay service | dev | T03 | backlog |
 | [T08](T08-sender-view.md) | Sender view | dev | T04, T07, T11 | backlog |
 | [T09](T09-receiver-view.md) | Receiver view | dev | T04, T07, T11 | backlog |

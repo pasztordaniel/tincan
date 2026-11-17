@@ -22,8 +22,9 @@ Anything that sets `style="..."` attributes in templates would be blocked (`styl
 or bindings such as `[style.width]`, which go through the CSSOM and are allowed.
 
 **Consequences.**
-- `index.html` is served by a handler, not `express.static`; a build that drops `ngCspNonce` from `index.html` breaks
-  styles under the CSP, which the e2e CSP spec catches only once a component has styles (verified manually).
+- `index.html` is served by a handler, not `express.static` (any spelling of the path, e.g. `/%69ndex.html`); a build
+  that drops `ngCspNonce` from `index.html` breaks styles under the CSP, which the e2e CSP spec catches by comparing
+  the attribute with the header nonce and checking that only nonced `<style>` elements apply.
 - `ng serve` has no CSP and the placeholder stays a literal there.
 - `base-uri` is `'self'`, not `'none'`: `<base href="/">` is needed for relative asset URLs on deep links like `/r/<id>`
   and `'none'` blocks it (found by the e2e spec).

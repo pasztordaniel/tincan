@@ -70,8 +70,9 @@ describe('hasExactKeys', () => {
   });
 
   it('inspects property descriptors, never get traps', () => {
-    // Validators read values through descriptors (see `prop`), so a get trap cannot hand out a
-    // different value after validation. Wire data is JSON and never a proxy; this guards local misuse.
+    // Validators read values through descriptors (see `prop`), so a get trap is never consulted
+    // during validation. This does not make a proxy safe: callers read fields with normal property
+    // access afterwards. Wire data comes from JSON.parse and is never a proxy, so that is out of scope.
     let reads = 0;
     const proxy = new Proxy(
       { a: 1 },

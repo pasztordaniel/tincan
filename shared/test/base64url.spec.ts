@@ -17,6 +17,12 @@ function bytes(length: number, seed = 1): Uint8Array {
   return out;
 }
 
+/** Decodes 2 characters ignoring the canonicality rule, to show a rejected string is not canonical. */
+function decodeLoose(s: string): number[] {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  return [(alphabet.indexOf(s[0]!) << 2) | (alphabet.indexOf(s[1]!) >> 4)];
+}
+
 describe('base64url', () => {
   it('matches RFC 4648 test vectors (unpadded, url alphabet)', () => {
     const ascii = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0));
@@ -81,6 +87,34 @@ describe('base64url', () => {
     for (const value of [undefined, null, 0, 12, {}, [], ['abcd'], new String('abcd')]) {
       expect(isBase64Url(value)).toBe(false);
     }
+  });
+
+  it('accepts a short string exactly when it is the encoding of its own decoding (exhaustive)', () => {
+    // Every 2- and 3-character string over the alphabet: only canonical ones (zero trailing bits) pass,
+    // and those are exactly the encodings of all 1- and 2-byte inputs.
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let accepted2 = 0;
+    let accepted3 = 0;
+    for (const a of alphabet) {
+      for (const b of alphabet) {
+        const two = a + b;
+        if (isBase64Url(two)) {
+          accepted2++;
+          expect(base64UrlEncode(base64UrlDecode(two))).toBe(two);
+        } else {
+          expect(base64UrlEncode(Uint8Array.of(...decodeLoose(two)))).not.toBe(two);
+        }
+        for (const c of alphabet) {
+          const three = two + c;
+          if (isBase64Url(three)) {
+            accepted3++;
+            expect(base64UrlEncode(base64UrlDecode(three))).toBe(three);
+          }
+        }
+      }
+    }
+    expect(accepted2).toBe(256);
+    expect(accepted3).toBe(65536);
   });
 
   it('enforces an exact byte length when given', () => {

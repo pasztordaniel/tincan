@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| dev | T08, T09, T10 | pr-open | `feat/T16-cut-the-line` |
+| dev | T08, T09, T10 | done | `feat/T16-cut-the-line` |
 
 ## Goal
 A **Cut the line** button on the sender and receiver views that ends the session on purpose, guarded against

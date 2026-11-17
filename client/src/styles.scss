@@ -56,6 +56,10 @@
   --color-on-danger: #ffffff;
   --color-primary-soft: #dcefee;
 
+  /* QR code: always dark on light, also in dark mode, or scanners fail. */
+  --qr-dark: #000000;
+  --qr-light: #ffffff;
+
   --color-focus: #3f5bd9; /* 5.3:1 on bg */
 
   /* State tones: soft pastel fill + dark text of the same hue (all >= 6.5:1). */

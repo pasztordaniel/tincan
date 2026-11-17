@@ -68,6 +68,7 @@ let nextId = 0;
   styles: `
     .link {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--space-2);
     }
     .link__label {

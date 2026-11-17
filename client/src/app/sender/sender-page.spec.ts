@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, type UrlTree } from '@angular/router';
 import { hasSenderSession, SenderPage } from './sender-page';
+import { QrCode } from '../ui/qr-code/qr-code';
 import { SenderSession } from './sender-session';
 
 function fakeSession(state: string, link: string | null = 'http://x/r/id#key') {
@@ -20,6 +21,53 @@ function fakeSession(state: string, link: string | null = 'http://x/r/id#key') {
 }
 
 describe('SenderPage', () => {
+  async function renderWaiting(session: ReturnType<typeof fakeSession>) {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: SenderSession, useValue: session }],
+    });
+    const fixture = TestBed.createComponent(SenderPage);
+    await fixture.whenStable();
+    return { fixture, root: fixture.nativeElement as HTMLElement };
+  }
+
+  it('keeps the QR code hidden until asked, and encodes the exact receiver link', async () => {
+    const { fixture, root } = await renderWaiting(fakeSession('waiting'));
+    expect(root.querySelector('app-qr-panel')).not.toBeNull();
+    expect(root.querySelector('app-qr-code')).toBeNull();
+    root.querySelector<HTMLButtonElement>('app-qr-panel button')!.click();
+    await fixture.whenStable();
+    const qr = fixture.debugElement.query((d) => d.componentInstance instanceof QrCode);
+    expect((qr.componentInstance as QrCode).payload()).toBe('http://x/r/id#key');
+  });
+
+  it.each(['connected', 'idle', 'reconnecting', 'ended'])(
+    'hides an open QR code when the line goes %s, and it is closed again if the line is waiting later',
+    async (next) => {
+      const session = fakeSession('waiting');
+      const { fixture, root } = await renderWaiting(session);
+      root.querySelector<HTMLButtonElement>('app-qr-panel button')!.click();
+      await fixture.whenStable();
+      expect(root.querySelector('app-qr-code')).not.toBeNull();
+      session.state.set(next);
+      await fixture.whenStable();
+      expect(root.querySelector('app-qr-panel')).toBeNull();
+      expect(root.querySelector('app-qr-code')).toBeNull();
+      session.state.set('waiting');
+      await fixture.whenStable();
+      expect(root.querySelector('app-qr-code')).toBeNull();
+    },
+  );
+
+  it('hides the QR code when the session is gone (no link)', async () => {
+    const session = fakeSession('waiting');
+    const { fixture, root } = await renderWaiting(session);
+    root.querySelector<HTMLButtonElement>('app-qr-panel button')!.click();
+    await fixture.whenStable();
+    session.link.set(null);
+    await fixture.whenStable();
+    expect(root.querySelector('app-qr-code')).toBeNull();
+  });
+
   it('shows the link card while waiting, hides it once connected, and ends the session on leave', async () => {
     const session = fakeSession('waiting');
     TestBed.configureTestingModule({

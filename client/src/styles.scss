@@ -295,3 +295,31 @@ dialog.dialog {
     background: rgb(23 22 28 / 40%);
   }
 }
+
+/* Screen frame shared by the sender, receiver and terminal-state screens. */
+.screen {
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+
+.screen__body {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+}
+
+.screen__lede {
+  color: var(--color-text-muted);
+  max-width: 28rem;
+}
+
+.screen__full {
+  justify-self: stretch;
+  text-align: start;
+}

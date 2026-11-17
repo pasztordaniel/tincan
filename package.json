@@ -21,6 +21,7 @@
     "test": "npm run build -w @tincan/shared && npm test -w @tincan/shared -w @tincan/client -w @tincan/server",
     "e2e": "npm run build && npm run test:e2e",
     "test:e2e": "npm test -w @tincan/e2e",
+    "demo:gif": "npm run build && npm run demo:gif -w @tincan/e2e",
     "lint": "npm run build -w @tincan/shared && eslint . && prettier --check . && npm run typecheck --workspaces",
     "typecheck": "npm run build -w @tincan/shared && npm run typecheck --workspaces",
     "format": "prettier --write . && eslint --fix .",

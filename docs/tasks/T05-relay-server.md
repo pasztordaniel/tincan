@@ -91,3 +91,4 @@ Frame size + rate limits. No payload logging.
   logs. Added tests for the three changes above (each fails without its fix). Nits, not blocking: the stalled
   receiver test reaches into the client's `ws._socket` because there is no public way to stall reads; the backlog
   counts all packets (pings, `peer`), which only makes the bound slightly stricter. Verdict: approve.
+- qa-tester: QA PASS. Ran the production server on :3208 and 31 checks with a socket.io client (golden path with 5 ordered frames, `full`, `not_found`, `unauthorized`, replayed seq, drop and resume, 20 s grace expiry, explicit leave, 10 s unbound timeout, flood disconnect, 96 KiB oversize, headers, silent logs). Report: [`docs/testing/T05.md`](../testing/T05.md).

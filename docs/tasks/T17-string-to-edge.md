@@ -37,3 +37,4 @@ The big "e" loop and the cans stay as they are.
   and dark (sender waiting and connected, receiver pick-up and connected), a 930 + 930 px side-by-side composite,
   the draw-in sequence and `/design`; no horizontal overflow anywhere, no console errors. Unit tests cover the
   tail's presence, side, `aria-hidden` and the snip case.
+- qa: FAIL, see [docs/testing/T17.md](../testing/T17.md). D1: sender waiting (dimmed tail) overshoots the viewport by 3 px at all widths, so `scrollWidth = innerWidth + 3` and the page scrolls sideways (repro: new thread, load `/s` at 1280 x 800, `scrollWidth` vs `innerWidth`, `scrollTo(200, 0)`). Everything else passed (edges, joins at 930/1280, motion, reduced motion, slack/cut unchanged, /design, resize, `npm run verify` green).

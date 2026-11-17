@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, type OnDestroy } from '@angular/core';
 import { Router, type CanActivateFn } from '@angular/router';
+import { QrPanel } from '../ui/qr-panel/qr-panel';
 import { LinkCard } from '../ui/link-card/link-card';
 import { SenderScreen } from '../screens/sender-screen';
 import { SenderSession } from './sender-session';
@@ -11,7 +12,7 @@ export const hasSenderSession: CanActivateFn = () =>
 /** Thin wrapper: binds `SenderScreen` to `SenderSession`. Leaving the page ends the session. */
 @Component({
   selector: 'app-sender-page',
-  imports: [SenderScreen, LinkCard],
+  imports: [SenderScreen, LinkCard, QrPanel],
   template: `
     <main class="sender">
       <app-sender-screen
@@ -26,6 +27,9 @@ export const hasSenderSession: CanActivateFn = () =>
       @if (session.link(); as link) {
         @if (session.state() === 'waiting') {
           <app-link-card class="sender__link" [link]="link" />
+          <!-- Rendered only while waiting: once the receiver is connected, the line is cut or the
+               session ends, the panel is destroyed and the QR (and its open state) is gone. -->
+          <app-qr-panel class="sender__link" [link]="link" />
         }
       }
     </main>

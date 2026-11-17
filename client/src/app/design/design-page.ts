@@ -15,6 +15,7 @@ import { ReceiverScreen, type ReceiverPhase } from '../screens/receiver-screen';
 import { SenderScreen } from '../screens/sender-screen';
 import { ButtonDirective } from '../ui/button/button';
 import { LinkCard } from '../ui/link-card/link-card';
+import { QrPanel } from '../ui/qr-panel/qr-panel';
 import { StatusPill } from '../ui/status-pill/status-pill';
 import type { LineState } from '../ui/status-pill/status-pill.model';
 import { motionAllowed } from '../ui/motion';
@@ -57,6 +58,7 @@ const SAMPLE =
     StatusPill,
     WarningBanner,
     SenderScreen,
+    QrPanel,
     ReceiverScreen,
     LineBusyScreen,
     LineCutScreen,
@@ -109,6 +111,11 @@ const SAMPLE =
           <figure class="frame card">
             <figcaption>Ended, you cut the line (read-only)</figcaption>
             <app-sender-screen state="ended" [text]="sample" [cutByYou]="true" />
+          </figure>
+          <figure class="frame card">
+            <figcaption>Waiting, QR code open (closed by default; hides once connected)</figcaption>
+            <app-link-card [link]="sampleLink" />
+            <app-qr-panel [link]="sampleLink" [open]="true" />
           </figure>
         </div>
       </section>
@@ -469,6 +476,8 @@ export class DesignPage {
     'reconnecting',
     'ended',
   ];
+  protected readonly sampleLink =
+    'https://tincan.example/r/AAAAAAAAAAAAAAAAAAAAAA#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   protected readonly senderStates: { state: LineState; caption: string; text: string }[] = [
     { state: 'waiting', caption: 'Waiting, ready to type', text: '' },
     { state: 'connected', caption: 'Connected, writing', text: SAMPLE },

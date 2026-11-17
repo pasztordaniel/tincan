@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTincanServer, isAllowedOrigin } from '../src/app.js';
+import { wsHandshake } from './ws-handshake.js';
 
 describe('server app', () => {
   let clientDir: string;
@@ -54,31 +55,45 @@ describe('server app', () => {
 });
 
 describe('socket.io origin check', () => {
-  const handshake = '/socket.io/?EIO=4&transport=polling';
-
-  it('accepts a handshake whose Origin matches Host', async () => {
+  async function upgrade(headers: Record<string, string>) {
     const { httpServer, io } = createTincanServer();
     try {
-      const res = await request(httpServer)
-        .get(handshake)
-        .set('Host', 'tincan.test')
-        .set('Origin', 'http://tincan.test');
-      expect(res.status).toBe(200);
-      expect(res.text).toContain('"sid"');
+      return await wsHandshake(httpServer, headers);
     } finally {
       await io.close();
     }
+  }
+
+  it('accepts a WebSocket handshake whose Origin matches Host', async () => {
+    const res = await upgrade({ Host: 'tincan.test', Origin: 'http://tincan.test' });
+    expect(res.status).toBe(101);
   });
 
-  it('rejects a handshake from a foreign Origin', async () => {
+  it('accepts an Origin-less WebSocket handshake (non-browser clients; tokens authorize, see T13-6)', async () => {
+    const res = await upgrade({ Host: 'tincan.test' });
+    expect(res.status).toBe(101);
+  });
+
+  it('rejects a WebSocket handshake from a foreign or opaque Origin', async () => {
+    // engine.io refuses every upgrade with 400 and names the reason in the body.
+    for (const origin of ['http://evil.test', 'null']) {
+      const res = await upgrade({ Host: 'tincan.test', Origin: origin });
+      expect(res).toMatchObject({ status: 400, body: 'Forbidden' });
+    }
+  });
+
+  it('offers no long-polling transport, so an Origin-less cross-site GET opens nothing', async () => {
     const { httpServer, io } = createTincanServer();
     try {
-      const res = await request(httpServer)
-        .get(handshake)
+      const noOrigin = await request(httpServer).get('/socket.io/?EIO=4&transport=polling');
+      expect(noOrigin.status).toBe(400);
+      expect(noOrigin.text).not.toContain('"sid"');
+      const sameOrigin = await request(httpServer)
+        .get('/socket.io/?EIO=4&transport=polling')
         .set('Host', 'tincan.test')
-        .set('Origin', 'http://evil.test');
-      expect(res.status).toBe(403);
-      expect(res.text).not.toContain('"sid"');
+        .set('Origin', 'http://tincan.test');
+      expect(sameOrigin.status).toBe(400);
+      expect(sameOrigin.text).not.toContain('"sid"');
     } finally {
       await io.close();
     }

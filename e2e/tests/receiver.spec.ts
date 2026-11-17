@@ -79,6 +79,20 @@ test.describe('receiver link', () => {
     }
   });
 
+  test('a key on a path outside /r is dropped before any page shows', async ({ page }) => {
+    const id = 'A'.repeat(22);
+    for (const path of [`/R/${id}`, `/rr/${id}`, `/r%2F${id}`, '/', '/x', '/design']) {
+      await page.goto(`${path}#${SAMPLE_KEY}`);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      // `/` after a redirect to `/` is a same-document navigation, dropped after the router's in-place navigation ends.
+      await expect.poll(() => page.evaluate(() => location.hash), { message: path }).toBe('');
+      expect(page.url()).not.toContain(SAMPLE_KEY);
+    }
+    // Same path, new fragment: no reload, so it is dropped after the router's in-place navigation ends.
+    await page.evaluate((key) => (location.hash = key), SAMPLE_KEY);
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
+  });
+
   test('an unknown thread ends at the gate with a clear message', async ({ page }) => {
     await page.goto(`/r/${'A'.repeat(22)}#${SAMPLE_KEY}`);
     await page.getByRole('button', OPEN).click();

@@ -20,7 +20,7 @@
 | Threat | Control | Where |
 |---|---|---|
 | Relay reads text | E2E AES-256-GCM in browser; key only in fragment + memory | `client` crypto |
-| Key reaches server / logs / referrer | Fragment is never sent in HTTP; cleared via `history.replaceState` before it is even validated, on every `/r` path (a mangled link is cleared too, never redirected with its fragment); `Referrer-Policy: no-referrer`; key imported non-extractable on both sides (the sender never holds an extractable `CryptoKey`), raw bytes zeroed after import; never persisted; crypto code never logs and its errors carry codes only | `client`, `server` headers |
+| Key reaches server / logs / referrer | Fragment is never sent in HTTP; cleared via `history.replaceState` before it is even validated, on every `/r` path (a mangled link is cleared too, never redirected with its fragment); on any other path an app initializer drops a fragment before the first navigation, so a link mangled outside `/r` (`/R/<id>`, `/#<key>`) keeps no key either, and a fragment that arrives without a reload is dropped once the router's in-place navigation ends; `Referrer-Policy: no-referrer`; key imported non-extractable on both sides (the sender never holds an extractable `CryptoKey`), raw bytes zeroed after import; never persisted; crypto code never logs and its errors carry codes only | `client`, `server` headers |
 | Ciphertext tampering | GCM tag check; then canonical padding (smallest bucket, zero bytes) and strict message validation; every failure is a typed integrity error, never a raw exception; failed frames dropped + UI warning, last good text kept | `client` |
 | Replay / reorder | Monotonic `seq` in AAD; receiver accepts only `seq > lastSeq`, checked before decryption and advanced only after a fully valid frame; frames are opened one at a time so concurrent arrivals cannot race the check | `shared`, `client` |
 | Cross-session splicing | `sessionId` in AAD | `shared`, `client` |
@@ -33,7 +33,7 @@
 | Clickjacking, MIME sniffing, cross-origin leaks | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`, `Permissions-Policy` denying camera, microphone, geolocation and more; no `X-Powered-By` | `server/src/headers.ts` |
 | Stale or cached shell / downgrade | `Cache-Control: no-store` on everything except hashed assets (immutable); `Strict-Transport-Security` (1 year, includeSubDomains) only on requests seen as HTTPS (TLS or `X-Forwarded-Proto: https`; forging it over HTTP is harmless, browsers ignore HSTS there) | `server` |
 | Dotfile / source disclosure | Any path with a dot-segment (`/.env`, `/.git/...`, also percent-encoded) answers 404; never served and never answered with the SPA | `server` |
-| Abuse / DoS | Message size limit (`maxHttpBufferSize`), 20 events/s per socket with disconnect on a flood, binary packets refused before decoding, a receiver that stops reading is dropped (grace) once 40 packets queue for it instead of the relay buffering frames without bound, session TTL (15 min without frames), 2 h absolute session lifetime, session cap (`busy`), one session per socket, a socket that has not created, joined or resumed within 10 s is disconnected (also socket.io's `connectTimeout` for a connection that never joins the namespace) | `server` |
+| Abuse / DoS | WebSocket transport only (no long-polling, so no Origin-less cross-site handshake GETs); message size limit (`maxHttpBufferSize`), 20 events/s per socket with disconnect on a flood, binary packets refused before decoding, a receiver that stops reading is dropped (grace) once 40 packets queue for it instead of the relay buffering frames without bound, session TTL (15 min without frames), 2 h absolute session lifetime, session cap (`busy`), one session per socket, a socket that has not created, joined or resumed within 10 s is disconnected (also socket.io's `connectTimeout` for a connection that never joins the namespace) | `server` |
 | Relay forwarding junk | Every handler argument untrusted: strict validators, exact arity, ack must be a function; `isFrame` and strictly increasing `seq` before forwarding a freshly built frame object | `server` |
 | Relay logs leak metadata | The relay logs no ids, tokens, payloads or per-event lines; only an error class when a handler throws | `server` |
 | Stale sessions | Session ends on reload/close (`pagehide` leaves explicitly, the peer is told at once); on `pagehide` the sender and the receiver both drop their key, plaintext and timers, so a page restored from bfcache shows the ended / "link already used" state and can neither show the old text nor join with the old key; 20 s grace for network blips only; a half-open connection (network lost, socket not closed) is noticed by the socket.io heartbeat (ping every 10 s, 5 s timeout) within 15 s instead of socket.io's default 45 s, then the grace | `server`, `client/src/app/lifecycle`, `client/src/app/receiver` |
@@ -46,8 +46,10 @@
 
 ### Deployment notes
 - **Reverse proxy must preserve `Host`** (nginx: `proxy_set_header Host $host;`). The socket.io origin check compares
-  the browser's `Origin` host:port with `Host` (scheme is not compared), so a rewritten `Host` makes every handshake 403.
+  the browser's `Origin` host:port with `Host` (scheme is not compared), so a rewritten `Host` makes every handshake fail (the WebSocket upgrade answers 400 `Forbidden`).
 - Terminate TLS at the proxy and send `X-Forwarded-Proto: https` so HSTS is emitted; also forward WebSocket upgrades.
+- **Limit connections per client address at the proxy** (nginx: `limit_conn` on `/socket.io/`, e.g. 20 per address,
+  plus `limit_req` on the upgrade). The relay itself has no per-address limit (R-6).
 
 ## Residual risks (documented, accepted)
 - **R-1 Code delivery.** The relay also serves the JavaScript. A malicious server can ship code that exfiltrates the
@@ -66,6 +68,16 @@
   (and in history sync, if enabled), and the sender's link exists wherever it was pasted. JS strings (the key
   string, decrypted text) cannot be zeroed. A session ends on reload or close, so an old link only reads frames if
   that session is still live and its receiver slot is free.
+
+- **R-6 Session-table exhaustion by one client.** The relay caps sessions globally (10 000, then `busy`) and limits
+  each socket (one session, 20 events/s), but nothing limits how many sockets or sessions one address holds: a
+  scripted client held 300 of 300 sessions in the T13 audit, and with enough connections it can fill the table so
+  every new thread gets `busy` until its sessions expire (15 min idle, 2 h lifetime; keeping them alive costs it one
+  frame per session per 15 min). A per-address limit in the relay would see only the proxy's address behind a reverse
+  proxy unless `X-Forwarded-For` is trusted, which needs a configured trusted-proxy list; that belongs to the
+  deployment, so the control is the proxy limit in the deployment notes. Availability only: no session can be read,
+  joined or hijacked this way. Related, lower impact: a socket whose session has ended stays connected (no unbound
+  timer is re-armed), so it costs a connection but holds no session.
 
 ## Review cadence
 - Every PR touching `client/**/crypto*`, `shared/`, server event handlers or headers: `/security-review` +

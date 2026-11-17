@@ -187,14 +187,13 @@ describe('security headers', () => {
     expect(double.headers['content-type']).toMatch(/^text\/html/);
   });
 
-  it('adds the base headers to socket.io polling responses', async () => {
+  it('adds the base headers to rejected socket.io polling requests', async () => {
     const { httpServer, io } = createTincanServer({ clientDir });
     try {
+      // Long-polling is disabled (WebSocket only), so the request ends in engine.io's 400.
       const res = await request(httpServer).get('/socket.io/?EIO=4&transport=polling');
-      expect(res.status).toBe(200);
-      expect(res.headers['x-content-type-options']).toBe('nosniff');
-      expect(res.headers['cross-origin-resource-policy']).toBe('same-origin');
-      expect(res.headers['cache-control']).toBe('no-store');
+      expect(res.status).toBe(400);
+      expectBaseHeaders(res.headers);
     } finally {
       await io.close();
     }
@@ -206,11 +205,12 @@ describe('security headers', () => {
       const unknown = await request(httpServer).get('/socket.io/?EIO=4&transport=bogus');
       expect(unknown.status).toBe(400);
       expectBaseHeaders(unknown.headers);
-      const crossSite = await request(httpServer)
-        .get('/socket.io/?EIO=4&transport=polling')
+      // A plain GET (no upgrade) on the WebSocket transport is refused by engine.io's request path.
+      const noUpgrade = await request(httpServer)
+        .get('/socket.io/?EIO=4&transport=websocket')
         .set('Origin', 'https://evil.example');
-      expect(crossSite.status).toBe(403);
-      expectBaseHeaders(crossSite.headers);
+      expect(noUpgrade.status).toBe(400);
+      expectBaseHeaders(noUpgrade.headers);
     } finally {
       await io.close();
     }

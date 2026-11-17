@@ -11,5 +11,10 @@ export const routes: Routes = [
     loadComponent: () => import('./design/design-page').then((m) => m.DesignPage),
     title: 'tincan design preview',
   },
+  {
+    path: 'r/:id',
+    loadComponent: () => import('./receiver/receiver-page').then((m) => m.ReceiverPage),
+    title: 'tincan',
+  },
   { path: '**', redirectTo: '' },
 ];

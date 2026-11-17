@@ -52,4 +52,12 @@ describe('ReceiverScreen', () => {
     expect(root.querySelector('app-illo-line-cut')).not.toBeNull();
     expect(root.textContent).toContain('Nothing more will arrive.');
   });
+
+  it('shows a typing hint, but not while stale', async () => {
+    const { fixture, root } = await render({ phase: 'live', text: 'x', typing: true });
+    expect(root.textContent).toContain('They are typing...');
+    fixture.componentRef.setInput('stale', true);
+    await fixture.whenStable();
+    expect(root.textContent).not.toContain('They are typing...');
+  });
 });

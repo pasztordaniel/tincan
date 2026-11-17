@@ -20,10 +20,15 @@ export function receiverMatcher(segments: UrlSegment[]): UrlMatchResult | null {
  * `/rr/<id>`, `/r%2F<id>`, a bare `/#<key>`) would otherwise reach the `**` redirect or another page
  * with the key still in the address bar and the session-history entry. Only literal `/r` paths keep the
  * fragment: the receiver page reads and clears it itself. Nothing in the app puts a fragment anywhere
- * else, so dropping it loses nothing.
+ * else, so dropping it loses nothing. `anyPath` is for a fragment that arrives after the page loaded:
+ * the receiver page reads the fragment only on load, so even on `/r` nobody would consume it.
  */
-export function dropStrayFragment(location: FragmentLocation, history: FragmentHistory): void {
-  if (location.hash === '' || /^\/r(\/|$)/.test(location.pathname)) return;
+export function dropStrayFragment(
+  location: FragmentLocation,
+  history: FragmentHistory,
+  { anyPath = false } = {},
+): void {
+  if (location.hash === '' || (!anyPath && /^\/r(\/|$)/.test(location.pathname))) return;
   clearFragment(location, history);
 }
 

@@ -41,3 +41,4 @@ input disabled once the session ends.
   also checks title, history state and console for the key. Accepted: `slice` at `MAX_TEXT_LENGTH` may split a
   surrogate pair (escaped by `JSON.stringify`, fits the bucket math; cosmetic only); typing frames reach the relay
   while no receiver is attached (padded like content, R-3 metadata).
+- qa-tester: QA PASS. Real Chromium against the production build with a Node receiver decrypting frames: link format, key never leaked, debounce/typing/beat bounds, late join, reconnect (only latest text), ended, idle (clock override), 10k clamp, 360/1280, light/dark, no CSP or console errors. Report: [docs/testing/T08.md](../testing/T08.md). Note: latest text is sent twice after a resume (harmless).

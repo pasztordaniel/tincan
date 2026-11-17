@@ -35,3 +35,11 @@ No remote fonts or assets (CSP). Screens, states and illustrations: [`docs/desig
   initializer, CSP-safe, only the UI preference in `localStorage` under `tincan.theme`). Illustrations redrawn
   to the maintainer's sketch: left can on its side, right can upright and tilted, string from each closed
   bottom with one cursive "e" loop, shared poses in `can-pose.ts`. Lint and unit tests green.
+- designer: second review round. Headings and the wordmark now use Pacifico 400 (`@fontsource/pacifico`,
+  OFL, latin woff2, `size-adjust: 84%`, display line height 1.3); Caveat stays on `/design` as the one
+  alternative; Kalam and Patrick Hand removed. Bundle: Pacifico woff2 32.3 kB on every page, Caveat 51.2 kB
+  only on `/design`; global CSS 7.08 kB (1.81 kB transfer); initial total 269.86 kB (70.66 kB transfer);
+  design-page chunk 23.18 kB. Illustrations: the open end (rolled lip, dark inside) faces away from the
+  string, the string leaves the closed bottom; string stroke halved to 1.5; the "e" loop shows only on a
+  live line (`live` input on sender and receiver), every other state draws a plain arc, and the fray sits at
+  the middle of the arc.

@@ -41,7 +41,7 @@ describe('SenderScreen', () => {
     const { fixture, root } = await render('idle', 'draft');
     fixture.componentRef.setInput('idleSecondsLeft', 59);
     await fixture.whenStable();
-    expect(root.querySelector('app-illo-line-snip')).not.toBeNull();
+    expect(root.querySelector('app-illo-sender .snip')).not.toBeNull();
     expect(root.textContent).toContain('Idle: the string will be cut soon');
     const timer = root.querySelector('[role="timer"]')!;
     expect(timer.textContent).toBe('0:59');

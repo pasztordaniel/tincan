@@ -26,10 +26,11 @@ import { LEFT_CAN, RIGHT_CAN, CAN_PARTS, canTransform } from './can-pose';
           }
         </g>
       }
-      <path class="string" d="M102.6 118C108 60 120 32 140 32C190 32 206 150 241 145" />
-      <path class="string-alt" d="M170 160Q166 122 195 101" />
-      <circle class="string-alt" cx="200" cy="96" r="5.5" />
-      <path class="string-alt" d="M205 100L214 108M196 91L190 82" />
+      <path class="string" d="M102.6 118C135 132 195 156 241 145" />
+      <!-- On mount the second string draws in and ties its knot onto the first (see illustration.scss). -->
+      <path class="string-alt knot-strand" pathLength="1" d="M146 74Q184 98 193 141" />
+      <circle class="string-alt knot-loop" pathLength="1" cx="197" cy="146" r="5.5" />
+      <path class="string-alt knot-tails" d="M202.5 149L211 154M191.5 149L185 155" />
     </svg>
   `,
   styleUrl: './illustration.scss',

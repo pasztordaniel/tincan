@@ -28,7 +28,12 @@ let nextId = 0;
   template: `
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
       @if (phase() === 'pickup') {
-        <app-illo-receiver [width]="280" [live]="false" label="A tin can waiting to be picked up" />
+        <app-illo-receiver
+          class="hero hero--screen"
+          [width]="280"
+          [live]="false"
+          label="A tin can waiting to be picked up"
+        />
         <div class="screen__body">
           <h2 [id]="uid + '-heading'">Someone is on the line</h2>
           <p class="screen__lede">Pick up to start reading. Nothing is shown until you do.</p>
@@ -37,16 +42,21 @@ let nextId = 0;
       } @else {
         @switch (illustration()) {
           @case ('frayed') {
-            <app-illo-line-frayed [width]="280" />
+            <app-illo-line-frayed class="hero hero--screen" [width]="280" />
           }
           @case ('slack') {
-            <app-illo-line-slack [width]="280" />
+            <app-illo-line-slack class="hero hero--screen" [width]="280" />
           }
           @case ('cut') {
-            <app-illo-line-cut [width]="280" />
+            <app-illo-line-cut class="hero hero--screen" [width]="280" />
           }
           @default {
-            <app-illo-receiver [width]="280" [live]="state() === 'connected'" />
+            <app-illo-receiver
+              class="hero hero--screen"
+              [width]="280"
+              [live]="state() === 'connected'"
+              [pulse]="text()"
+            />
           }
         }
         <div class="screen__body">

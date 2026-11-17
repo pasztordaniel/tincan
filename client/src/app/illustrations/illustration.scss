@@ -14,6 +14,16 @@ svg {
   overflow: visible;
 }
 
+/* Hero use (global .hero sets the box): the art fills it, whatever the width attribute says. */
+:host(.hero) {
+  display: block;
+  max-width: none;
+}
+:host(.hero) svg {
+  width: 100%;
+  max-width: none;
+}
+
 .ground {
   fill: var(--illo-ground);
 }
@@ -87,29 +97,25 @@ svg {
   stroke-linecap: round;
 }
 
-/* Motion only when the user has not asked for less of it. */
-@media (prefers-reduced-motion: no-preference) {
-  .anim-sway {
-    transform-box: view-box;
-    transform-origin: 170px 118px;
-    animation: illo-sway 2.4s ease-in-out infinite alternate;
-  }
-  .anim-hum {
-    animation: illo-hum 2s ease-in-out infinite;
-  }
+/* A frame travelling along the live string: one short bright dash, hidden at rest (driven by WAAPI). */
+/* Waiting for the other end: the loop is there, but quiet. */
+.string--waiting {
+  opacity: 0.55;
 }
 
-@keyframes illo-sway {
-  to {
-    transform: scaleY(0.55);
-  }
+.pulse {
+  fill: none;
+  stroke: var(--illo-pulse);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0.12 2;
+  stroke-dashoffset: 0.12;
+  opacity: 0;
+  pointer-events: none;
 }
 
-@keyframes illo-hum {
-  50% {
-    opacity: 0.35;
-  }
-}
+/* Motion (draw-in, sway, wobble, cut, knot, fray, snip) lives in src/illustration-motion.scss: global, so
+   the rules ship once instead of once per illustration component. */
 
 /* Cut-out stroke drawn on top of an accent fill (the "!" in a warning sign). */
 .mark-knock {

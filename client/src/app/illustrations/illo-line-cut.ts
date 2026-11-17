@@ -26,13 +26,18 @@ import { LEFT_CAN, RIGHT_CAN, CAN_PARTS, canTransform } from './can-pose';
           }
         </g>
       }
-      <path class="string" d="M102.6 118C108 60 120 32 140 32C160 32 172 48 177 68" />
-      <path class="string" d="M241 145C214 150 200 116 197 78" />
-      <path class="mark" d="M187 56L177 78M187 56L197 78" />
-      <path class="mark" d="M187 56L179 38M187 56L195 38" />
-      <circle class="mark" cx="176" cy="30" r="8" />
-      <circle class="mark" cx="198" cy="30" r="8" />
-      <circle class="mark-fill" cx="187" cy="56" r="2.5" />
+      <!-- On mount the scissors snap shut once and the two ends spring apart (see illustration.scss). -->
+      <path class="string cut-end cut-end--left" d="M102.6 118C118.8 125 141.9 134.5 166.7 140.9" />
+      <path class="string cut-end cut-end--right" d="M241 145C223.5 149.2 204 148.3 184.8 144.8" />
+      <g class="cut-blade cut-blade--a">
+        <path class="mark" d="M175.7 121L165.7 143M175.7 121L183.7 103" />
+        <circle class="mark" cx="186.7" cy="95" r="8" />
+      </g>
+      <g class="cut-blade cut-blade--b">
+        <path class="mark" d="M175.7 121L185.7 143M175.7 121L167.7 103" />
+        <circle class="mark" cx="164.7" cy="95" r="8" />
+      </g>
+      <circle class="mark-fill" cx="175.7" cy="121" r="2.5" />
     </svg>
   `,
   styleUrl: './illustration.scss',

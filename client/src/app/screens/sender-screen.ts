@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
-import { IlloLineCut, IlloLineSlack, IlloLineSnip, IlloSender } from '../illustrations';
+import { IlloLineCut, IlloLineSlack, IlloSender } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
 import { StatusPill } from '../ui/status-pill/status-pill';
 import type { LineState } from '../ui/status-pill/status-pill.model';
@@ -13,29 +13,31 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-sender-screen',
-  imports: [
-    IlloSender,
-    IlloLineSlack,
-    IlloLineSnip,
-    IlloLineCut,
-    StatusPill,
-    WarningBanner,
-    ButtonDirective,
-  ],
+  imports: [IlloSender, IlloLineSlack, IlloLineCut, StatusPill, WarningBanner, ButtonDirective],
   template: `
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
       @switch (state()) {
         @case ('reconnecting') {
-          <app-illo-line-slack [width]="280" />
+          <app-illo-line-slack class="hero hero--screen" [width]="280" />
         }
         @case ('idle') {
-          <app-illo-line-snip [width]="280" />
+          <app-illo-sender
+            class="hero hero--screen"
+            [width]="280"
+            [snip]="true"
+            label="Your tin can, open scissors closing in on its string: the line is about to be cut"
+          />
         }
         @case ('ended') {
-          <app-illo-line-cut [width]="280" />
+          <app-illo-line-cut class="hero hero--screen" [width]="280" />
         }
         @default {
-          <app-illo-sender [width]="280" [live]="state() === 'connected'" />
+          <app-illo-sender
+            class="hero hero--screen"
+            [width]="280"
+            [live]="state() === 'connected'"
+            [pulse]="text()"
+          />
         }
       }
       <div class="screen__body">

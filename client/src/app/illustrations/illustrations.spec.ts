@@ -6,7 +6,6 @@ import {
   IlloLineCut,
   IlloLineFrayed,
   IlloLineSlack,
-  IlloLineSnip,
   IlloReceiver,
   IlloSender,
 } from './index';
@@ -18,7 +17,6 @@ const ALL: Type<unknown>[] = [
   IlloLineBusy,
   IlloLineCut,
   IlloLineSlack,
-  IlloLineSnip,
   IlloLineFrayed,
 ];
 
@@ -57,19 +55,33 @@ describe('illustrations', () => {
   });
 
   it.each([IlloSender, IlloReceiver])(
-    '%o draws the loop only while the line is live',
+    '%o keeps the loop while the line is open, dim until it goes live',
     async (component) => {
-      const strings = async (live: boolean) => {
+      const string = async (live: boolean) => {
         const fixture = TestBed.createComponent(component as Type<unknown>);
         fixture.componentRef.setInput('live', live);
         await fixture.whenStable();
-        return (fixture.nativeElement as HTMLElement).querySelector('.string')!.getAttribute('d');
+        const root = fixture.nativeElement as HTMLElement;
+        return { el: root.querySelector('.string')!, pulse: root.querySelector('.pulse') };
       };
-      const looped = await strings(true);
-      const plain = await strings(false);
-      expect(looped).not.toBe(plain);
-      // The loop is the only place the path doubles back with a second pair of curves.
-      expect(looped!.match(/C/g)!.length).toBeGreaterThan(plain!.match(/C/g)!.length);
+      const live = await string(true);
+      const waiting = await string(false);
+      expect(live.el.getAttribute('d')).toBe(waiting.el.getAttribute('d'));
+      // The loop doubles back on itself: several curve segments, not one plain arc.
+      expect(live.el.getAttribute('d')!.match(/C/g)!.length).toBeGreaterThan(3);
+      expect(live.el.classList).toContain('string--live');
+      expect(live.pulse).not.toBeNull();
+      expect(waiting.el.classList).toContain('string--waiting');
+      expect(waiting.pulse).toBeNull();
     },
   );
+
+  it('drops the loop and brings in the scissors when the sender is about to be cut', async () => {
+    const fixture = TestBed.createComponent(IlloSender);
+    fixture.componentRef.setInput('snip', true);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.snip')).not.toBeNull();
+    expect(root.querySelector('.string')!.getAttribute('d')!.match(/C/g)!.length).toBe(1);
+  });
 });

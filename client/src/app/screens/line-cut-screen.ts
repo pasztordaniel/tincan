@@ -11,7 +11,7 @@ let nextId = 0;
   imports: [IlloLineCut, ButtonDirective, RouterLink],
   template: `
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
-      <app-illo-line-cut [width]="280" />
+      <app-illo-line-cut class="hero hero--screen" [width]="280" />
       <div class="screen__body">
         <h2 [id]="uid + '-heading'">Line cut</h2>
         <p class="screen__lede">

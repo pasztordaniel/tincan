@@ -27,14 +27,16 @@ import { LEFT_CAN, RIGHT_CAN, CAN_PARTS, canTransform } from './can-pose';
         </g>
       }
       <!-- Unravelling at the middle of the arc: the strands split apart and two have snapped. -->
-      <path class="string" d="M102.6 118C108 60 120 32 140 32C150 32 159 37 166.3 44.2" />
-      <path class="string" d="M177.3 57.4C194 79 210 147 241 145" />
+      <path class="string" d="M102.6 118C118.2 124.7 140.1 133.7 163.7 140.1" />
+      <path class="string" d="M177.2 143.4C198.9 148 221.2 149.7 241 145" />
       <path
-        class="string string--fray"
-        d="M166.3 44.2Q167.5 55 177.3 57.4M166.3 44.2Q177 46 177.3 57.4M166.3 44.2Q171 51 177.3 57.4M171.5 49.5L177 43.5M172 51.5L166 56"
+        class="string string--fray fray-spread"
+        d="M163.7 140.1Q168 127 177.2 143.4M163.7 140.1Q172 156 177.2 143.4M163.7 140.1Q170.5 140 177.2 143.4M167.5 134L171 125M173 149L169.5 158"
       />
-      <path class="mark-fill" d="M198 10L215 38H181Z" />
-      <path class="mark-knock" d="M198 19V28M198 32V33" />
+      <g class="mark-pop">
+        <path class="mark-fill" d="M170 92L187 120H153Z" />
+        <path class="mark-knock" d="M170 101V110M170 114V115" />
+      </g>
     </svg>
   `,
   styleUrl: './illustration.scss',

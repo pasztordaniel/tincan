@@ -27,8 +27,9 @@ import { LEFT_CAN, RIGHT_CAN, CAN_PARTS, canTransform } from './can-pose';
         </g>
       }
       <path
-        class="string"
-        d="M102.6 118C108 70 116 36 130 32C142 29 146 18 136 16 C126 14 124 30 140 34C200 44 206 150 241 145"
+        class="string string--draw"
+        pathLength="1"
+        d="M102.6 118C130 118 165 116 185 108C205 100 212 70 207 55C203 45 190 44 182 48C168 56 160 85 160.5 112C161 135 175 151 197 151C215 151 230 148 241 145"
       />
     </svg>
   `,

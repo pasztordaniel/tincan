@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTincanServer } from '../src/app.js';
+import { createTincanServer, isAllowedOrigin } from '../src/app.js';
 
 describe('server app', () => {
   let clientDir: string;
@@ -40,5 +40,61 @@ describe('server app', () => {
 
     const missing = await request(app).get('/missing.js');
     expect(missing.status).toBe(404);
+    expect(missing.text).toBe('Not Found');
+  });
+
+  it('answers a malformed URL with a bare 400 that echoes nothing', async () => {
+    const { app } = createTincanServer({ clientDir });
+    const res = await request(app).get('/%E0%A4%A');
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Bad Request');
+    expect(res.text).not.toContain('%E0');
+    expect(res.text).not.toMatch(/\bat\s/);
+  });
+});
+
+describe('socket.io origin check', () => {
+  const handshake = '/socket.io/?EIO=4&transport=polling';
+
+  it('accepts a handshake whose Origin matches Host', async () => {
+    const { httpServer, io } = createTincanServer();
+    try {
+      const res = await request(httpServer)
+        .get(handshake)
+        .set('Host', 'tincan.test')
+        .set('Origin', 'http://tincan.test');
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('"sid"');
+    } finally {
+      await io.close();
+    }
+  });
+
+  it('rejects a handshake from a foreign Origin', async () => {
+    const { httpServer, io } = createTincanServer();
+    try {
+      const res = await request(httpServer)
+        .get(handshake)
+        .set('Host', 'tincan.test')
+        .set('Origin', 'http://evil.test');
+      expect(res.status).toBe(403);
+      expect(res.text).not.toContain('"sid"');
+    } finally {
+      await io.close();
+    }
+  });
+});
+
+describe('isAllowedOrigin', () => {
+  it.each([
+    ['same host and port', 'http://localhost:4200', 'localhost:4200', true],
+    ['default port omitted on both', 'https://tincan.test', 'tincan.test', true],
+    ['different port', 'http://localhost:4200', 'localhost:3000', false],
+    ['different host', 'http://evil.test', 'tincan.test', false],
+    ['opaque origin', 'null', 'tincan.test', false],
+    ['missing Host', 'http://tincan.test', undefined, false],
+    ['missing Origin (same-origin GET or non-browser client)', undefined, 'tincan.test', true],
+  ] as const)('%s', (_name, origin, host, expected) => {
+    expect(isAllowedOrigin(origin, host)).toBe(expected);
   });
 });

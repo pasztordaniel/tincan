@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch --clear-screen=false src/index.ts",
-    "serve": "node dist/index.js",
+    "serve": "node --env-file=production.env dist/index.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

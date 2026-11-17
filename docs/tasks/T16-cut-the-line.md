@@ -56,3 +56,4 @@ accidental taps by an inline two-step confirm (no browser dialog).
   - Known edge, accepted: the sender's idle countdown keeps ticking under an open confirm, so the line can be cut by
     the idle clock while the question is showing.
   - Doc wording: `peer_left` is immediate only while connected (see Acceptance and architecture.md).
+- qa: behaviour PASS at 2d79617, report docs/testing/T16.md. `npm run verify` RED: e2e `cut-the-line.spec.ts` "Escape and Keep talking" fails (Escape sent before focus reaches "Keep talking" is lost, so the confirm stays open; 3 of 5 runs without a delay). Repro in the report, defect 1.

@@ -18,7 +18,7 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T11](T11-design-system.md) | Design system + logo | designer | T01 | done |
 | [T12](T12-e2e-suite.md) | End-to-end suite | qa-tester | T08, T09 | done |
 | [T13](T13-security-pass.md) | Security review + audit | security-pentester | continuous | done |
-| [T14](T14-readme-final.md) | Final README | pm | all | backlog |
+| [T14](T14-readme-final.md) | Final README | pm | all | in-review |
 | [T15](T15-signed-frames.md) | Stretch: signed frames | senior-dev | T04 | won't do (see [ADR 0009](../decisions/0009-signed-frames.md)) |
 | [T16](T16-cut-the-line.md) | Cut the line button | dev | T08, T09, T10 | done |
 | [T17](T17-string-to-edge.md) | String to the viewport edge | designer | T11, T08, T09 | done |

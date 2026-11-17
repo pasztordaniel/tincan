@@ -19,9 +19,9 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T12](T12-e2e-suite.md) | End-to-end suite | qa-tester | T08, T09 | done |
 | [T13](T13-security-pass.md) | Security review + audit | security-pentester | continuous | backlog |
 | [T14](T14-readme-final.md) | Final README | pm | all | backlog |
-| [T15](T15-signed-frames.md) | Stretch: signed frames | senior-dev | T04 | backlog |
+| [T15](T15-signed-frames.md) | Stretch: signed frames | senior-dev | T04 | won't do (see [ADR 0009](../decisions/0009-signed-frames.md)) |
 | [T16](T16-cut-the-line.md) | Cut the line button | dev | T08, T09, T10 | done |
-| [T17](T17-string-to-edge.md) | String to the viewport edge | designer | T11, T08, T09 | pr-open |
+| [T17](T17-string-to-edge.md) | String to the viewport edge | designer | T11, T08, T09 | done |
 | [T18](T18-qr-code.md) | Receiver link as a QR code | dev | T08 | done |
 
 ## Parallel lanes

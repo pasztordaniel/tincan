@@ -13,3 +13,4 @@ Add one when a choice would surprise a new contributor. Number sequentially; nev
 | [0006](0006-csp-style-nonce.md) | Per-response style nonce instead of `'unsafe-inline'` | Accepted |
 | [0007](0007-strict-wire-validation.md) | Strict wire validation and a 96 KiB message limit | Accepted |
 | [0008](0008-qr-code-generator.md) | `qrcode-generator` for the receiver-link QR code | Accepted |
+| [0009](0009-signed-frames.md) | No ECDSA-signed frames (for now) | Accepted |

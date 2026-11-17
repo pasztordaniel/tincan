@@ -31,21 +31,25 @@ svg {
   stroke: var(--illo-can-shade);
   stroke-width: 2;
 }
-.can__rim {
+/* The bottom: a crimped seam just inside the silhouette, no visible face. */
+.can__seam {
+  fill: none;
+  stroke: var(--illo-can-shade);
+  stroke-width: 1.5;
+}
+/* The open end faces the viewer: a rolled lip around a dark inside. */
+.can__lip {
   fill: var(--illo-can);
   stroke: var(--illo-can-rim);
-  stroke-width: 2;
+  stroke-width: 3;
 }
 .can__mouth {
+  fill: var(--illo-can-inside);
+}
+.can__wall {
   fill: var(--illo-can-shade);
 }
-.can__inside {
-  fill: none;
-  stroke: var(--illo-can-rim);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-}
-/* Where the string goes through the closed bottom of the can. */
+/* Where the string leaves the middle of the closed bottom. */
 .can__knot {
   fill: var(--illo-string);
 }
@@ -53,9 +57,16 @@ svg {
 .string-alt,
 .mark {
   fill: none;
-  stroke-width: 3;
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+.mark {
+  stroke-width: 2.25;
+}
+/* Loose fibres where the line is worn through. */
+.string--fray {
+  stroke-width: 1;
 }
 .string {
   stroke: var(--illo-string);
@@ -72,7 +83,7 @@ svg {
 .waves {
   fill: none;
   stroke: var(--illo-can-rim);
-  stroke-width: 2.5;
+  stroke-width: 2;
   stroke-linecap: round;
 }
 

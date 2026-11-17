@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { LEFT_CAN, RIGHT_CAN, canTransform } from './can-pose';
+import { LEFT_CAN, RIGHT_CAN, CAN_PARTS, canTransform } from './can-pose';
 
-/** Placeholder art, swap freely. Integrity warning: the string is tangled and frayed. */
+/** Placeholder art, swap freely. Integrity warning: the string is frayed in the middle. */
 @Component({
   selector: 'app-illo-line-frayed',
   template: `
@@ -21,22 +21,18 @@ import { LEFT_CAN, RIGHT_CAN, canTransform } from './can-pose';
           ry="5"
         />
         <g [attr.transform]="transform(can)">
-          <path class="can__body" d="M-35 -26H35A8 26 0 0 1 35 26H-35Z" />
-          <path class="can__label" d="M-9 -26H9A8 26 0 0 0 9 26H-9A8 26 0 0 1 -9 -26Z" />
-          <path class="can__ridge" d="M-20 -26A8 26 0 0 0 -20 26M20 -26A8 26 0 0 0 20 26" />
-          <ellipse class="can__rim" cx="-35" cy="0" rx="8" ry="26" />
-          <ellipse class="can__mouth" cx="-35" cy="0" rx="5.5" ry="21" />
-          <path class="can__inside" d="M-37 -12A4 14 0 0 0 -37 12" />
-          <circle class="can__knot" cx="43" cy="0" r="3" />
+          @for (part of canParts; track part.part) {
+            <path [attr.class]="part.part" [attr.d]="part.d" />
+          }
         </g>
       }
-      <path class="string" d="M102.6 118C108 70 116 38 128 33" />
+      <!-- Unravelling at the middle of the arc: the strands split apart and two have snapped. -->
+      <path class="string" d="M102.6 118C108 60 120 32 140 32C150 32 159 37 166.3 44.2" />
+      <path class="string" d="M177.3 57.4C194 79 210 147 241 145" />
       <path
-        class="string"
-        d="M128 33C134 24 146 22 144 32C142 42 130 36 136 26C142 16 156 22 150 32C147 38 142 31 152 34"
+        class="string string--fray"
+        d="M166.3 44.2Q167.5 55 177.3 57.4M166.3 44.2Q177 46 177.3 57.4M166.3 44.2Q171 51 177.3 57.4M171.5 49.5L177 43.5M172 51.5L166 56"
       />
-      <path class="string" d="M152 34C200 44 206 150 241 145" />
-      <path class="string" d="M128 33L121 30M128 33L123 40M152 34L159 29M152 34L158 41" />
       <path class="mark-fill" d="M198 10L215 38H181Z" />
       <path class="mark-knock" d="M198 19V28M198 32V33" />
     </svg>
@@ -46,12 +42,11 @@ import { LEFT_CAN, RIGHT_CAN, canTransform } from './can-pose';
 })
 export class IlloLineFrayed {
   /** Accessible description of the state; override when the context says more. */
-  readonly label = input(
-    'A tangled, frayed string between two tin cans: something tampered with the line',
-  );
+  readonly label = input('A frayed string between two tin cans: something tampered with the line');
   /** Rendered width in px (height follows the 2:1 viewBox); never wider than the container. */
   readonly width = input(320);
 
   protected readonly cans = [LEFT_CAN, RIGHT_CAN];
   protected readonly transform = canTransform;
+  protected readonly canParts = CAN_PARTS;
 }

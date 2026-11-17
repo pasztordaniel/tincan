@@ -209,7 +209,9 @@ const SAMPLE =
             <div class="illos">
               <app-illo-home [width]="140" />
               <app-illo-sender [width]="140" />
+              <app-illo-sender [width]="140" [live]="false" />
               <app-illo-receiver [width]="140" />
+              <app-illo-receiver [width]="140" [live]="false" />
               <app-illo-line-busy [width]="140" />
               <app-illo-line-cut [width]="140" />
               <app-illo-line-slack [width]="140" />

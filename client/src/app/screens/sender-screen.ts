@@ -23,7 +23,7 @@ let nextId = 0;
           <app-illo-line-cut [width]="280" />
         }
         @default {
-          <app-illo-sender [width]="280" />
+          <app-illo-sender [width]="280" [live]="state() === 'connected'" />
         }
       }
       <div class="screen__body">

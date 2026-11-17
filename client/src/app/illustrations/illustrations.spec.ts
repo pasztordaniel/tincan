@@ -53,4 +53,21 @@ describe('illustrations', () => {
     });
     expect(new Set(labels).size).toBe(ALL.length);
   });
+
+  it.each([IlloSender, IlloReceiver])(
+    '%o draws the loop only while the line is live',
+    async (component) => {
+      const strings = async (live: boolean) => {
+        const fixture = TestBed.createComponent(component as Type<unknown>);
+        fixture.componentRef.setInput('live', live);
+        await fixture.whenStable();
+        return (fixture.nativeElement as HTMLElement).querySelector('.string')!.getAttribute('d');
+      };
+      const looped = await strings(true);
+      const plain = await strings(false);
+      expect(looped).not.toBe(plain);
+      // The loop is the only place the path doubles back with a second pair of curves.
+      expect(looped!.match(/C/g)!.length).toBeGreaterThan(plain!.match(/C/g)!.length);
+    },
+  );
 });

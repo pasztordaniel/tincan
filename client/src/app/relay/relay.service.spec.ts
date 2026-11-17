@@ -35,6 +35,9 @@ class FakeSocket {
     );
     return this;
   }
+  listenerTotal(): number {
+    return [...this.listeners.values()].reduce((n, l) => n + l.length, 0);
+  }
   removeAllListeners(): this {
     this.listeners.clear();
     return this;
@@ -568,6 +571,7 @@ describe('RelayService', () => {
       await vi.advanceTimersByTimeAsync(RECONNECT_GRACE_MS / 2);
       socket.serverConnect(); // resume pending
       socket.serverDrop();
+      expect(vi.getTimerCount()).toBe(1); // one grace timer, not a second one
       await vi.advanceTimersByTimeAsync(RECONNECT_GRACE_MS / 2 + 1);
       expect(relay.ended()).toBe('grace_expired');
     });
@@ -579,6 +583,7 @@ describe('RelayService', () => {
       relay.frames$.subscribe((f) => frames.push(f));
       relay.ended$.subscribe((r) => ended.push(r));
       relay.leave();
+      expect(socket.listenerTotal()).toBe(0);
       socket.fire('frame', frame(1));
       socket.fire('peer', { state: 'connected' });
       socket.fire('session:ended', { reason: 'peer_left' });

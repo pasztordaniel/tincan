@@ -20,9 +20,9 @@
 | Threat | Control | Where |
 |---|---|---|
 | Relay reads text | E2E AES-256-GCM in browser; key only in fragment + memory | `client` crypto |
-| Key reaches server / logs / referrer | Fragment is never sent in HTTP; cleared via `history.replaceState`; `Referrer-Policy: no-referrer`; key imported non-extractable; never persisted | `client`, `server` headers |
-| Ciphertext tampering | GCM tag check; failed frames dropped + UI warning, last good text kept | `client` |
-| Replay / reorder | Monotonic `seq` in AAD; receiver accepts only `seq > lastSeq` | `shared`, `client` |
+| Key reaches server / logs / referrer | Fragment is never sent in HTTP; cleared via `history.replaceState` before it is even validated; `Referrer-Policy: no-referrer`; key imported non-extractable on both sides (the sender never holds an extractable `CryptoKey`), raw bytes zeroed after import; never persisted; crypto code never logs and its errors carry codes only | `client`, `server` headers |
+| Ciphertext tampering | GCM tag check; then canonical padding (smallest bucket, zero bytes) and strict message validation; every failure is a typed integrity error, never a raw exception; failed frames dropped + UI warning, last good text kept | `client` |
+| Replay / reorder | Monotonic `seq` in AAD; receiver accepts only `seq > lastSeq`, checked before decryption and advanced only after a fully valid frame; frames are opened one at a time so concurrent arrivals cannot race the check | `shared`, `client` |
 | Cross-session splicing | `sessionId` in AAD | `shared`, `client` |
 | IV reuse | Fresh random 96-bit IV per frame (tested) | `client` |
 | Withholding / freezing | Encrypted heartbeat with timestamp; stale indicator | `client` |

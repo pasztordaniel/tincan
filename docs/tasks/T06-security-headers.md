@@ -40,3 +40,6 @@ Express serves the built client with: strict CSP (`default-src 'self'`, `connect
   socket.io attaches. Accepted: `base-uri 'self'` (needed for `<base href="/">`; an injected same-origin `<base>` needs
   HTML injection first, which Angular interpolation and Trusted Types prevent), `img-src data:`, no CSP on socket.io
   responses (not documents), HSTS trusts any `X-Forwarded-Proto` (harmless over HTTP). Verdict: approve.
+- qa-tester: QA PASS. Production build in a real browser: `/` and `/r/abc` with no CSP violations or console errors,
+  per-response nonce, `no-store`, hashed assets immutable, dotfiles and 404s correct, cross-origin iframe blocked.
+  Report: [docs/testing/T06.md](../testing/T06.md).

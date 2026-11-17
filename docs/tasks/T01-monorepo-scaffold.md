@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| senior-dev | — | backlog | — |
+| senior-dev | — | in-progress | `chore/T01-monorepo-scaffold` |
 
 ## Goal
 npm workspaces with `client/` (Angular, latest stable, standalone + signals), `server/` (Express + socket.io, TS),
@@ -16,3 +16,4 @@ strict TS, `engines` + `.nvmrc`.
 
 ## Log
 <!-- claim, review, security and QA notes go here, newest last -->
+- senior-dev: claimed

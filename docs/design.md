@@ -70,7 +70,8 @@ These screens or states don't appear in the original sketch, but the protocol ne
 Motion is CSS, SVG and the Web Animations API only: no animation library, no inline `style` attributes (the
 CSP is `style-src 'self' 'nonce-...'`). Only transform, opacity and stroke-dashoffset on small paths are
 animated. Every animation is a one-shot tied to an event and ends on the static pose; the few repeats are
-short and finite, so nothing keeps moving while someone reads. Under `prefers-reduced-motion: reduce` none of
+short and finite, so nothing keeps moving while someone reads. The one exception is the empty writer's caret
+blink (1.1 s steps), a fake caret shown only while the writer is empty and unfocused, and gone once it has focus or text. Under `prefers-reduced-motion: reduce` none of
 it runs: CSS motion sits inside `@media (prefers-reduced-motion: no-preference)` and script-driven motion asks
 `motionAllowed()` first (`client/src/app/ui/motion.ts`). Every animation can be replayed on `/design#motion`.
 

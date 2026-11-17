@@ -228,12 +228,32 @@ const SAMPLE =
       margin-inline: auto;
       padding: var(--space-6) var(--space-4) var(--space-8);
     }
+    /* Leaves room for the theme toggle pinned to the top-right corner. */
     .guide__head {
       display: grid;
       gap: var(--space-2);
+      padding-inline-end: var(--space-7);
     }
     .guide__head p {
       color: var(--color-text-muted);
+    }
+    .sample {
+      font-size: var(--text-2xl);
+      line-height: var(--leading-tight);
+      font-weight: var(--weight-display);
+      font-synthesis: none;
+    }
+    .sample--caveat {
+      font-family: var(--font-display);
+    }
+    .sample--h2 {
+      font-size: var(--text-xl);
+    }
+    code {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      overflow-wrap: anywhere;
     }
     section {
       display: grid;

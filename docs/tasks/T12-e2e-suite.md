@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| qa-tester | T08, T09 (T10 for lifecycle specs) | in-review | `test/T12-e2e-suite` |
+| qa-tester | T08, T09 (T10 for lifecycle specs) | pr-open | `test/T12-e2e-suite` |
 
 ## Goal
 Playwright with two browser contexts. Specs: golden path with ≥2 consecutive updates; second receiver refused;

@@ -47,6 +47,8 @@ unreliable and blocks bfcache, and not `visibilitychange`, so switching tabs on 
 the sender session and calls `RelayService.leave()`, an explicit socket disconnect that socket.io writes to the open
 WebSocket synchronously, so the peer sees `peer_left` at once instead of after the 20 s grace. A page restored from
 bfcache (`pageshow` with `persisted`) is ended again: its key and token are gone, so it shows the ended state.
+The component-scoped `ReceiverSession` registers through `PageLifecycle.onHide()` and drops its key, text and timers
+too: a restored receiver page says "Link already used", like a reload.
 Network blips (WebSocket closed, relay unreachable) are the other path: both sides show "Line is slack,
 reconnecting...", the client resumes with its token through socket.io's reconnection (500 ms to 3 s backoff, so no
 extra reaction to the browser's `online` event is needed), and the sender resends its latest text.
@@ -81,6 +83,11 @@ Rules:
 - A tab that leaves on purpose (close, reload) calls `socket.disconnect()`; the server sees
   `client namespace disconnect`, sends `peer: gone` and `session:ended { reason: 'peer_left' }` to the other party
   at once. Any other disconnect starts the reconnect grace (`peer: reconnecting`).
+- Heartbeat: the relay sets socket.io's `pingInterval` to 10 s and `pingTimeout` to 5 s (defaults 25 s + 20 s), so a
+  half-open connection (network lost, socket not closed) is cut within 15 s on both ends and the grace starts then.
+  The receiver already turns stale after 15 s without a beat; this bounds how long the sender sees a vanished
+  receiver as connected. Pings cost a few bytes next to the 5 s beat, and the client answers them from its message
+  handler, so background timer throttling does not cause false timeouts.
 - Validators are strict: plain objects only, exact key sets (no extra keys, `__proto__`/`constructor` rejected),
   own data properties only, exact types and ranges. Handlers must also treat the ack argument as untrusted (it may be
   missing or not a function).

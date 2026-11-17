@@ -31,3 +31,19 @@ plus heartbeat-driven stale indicator.
     leave tests deliberately do not use it: the proxy hop loses the disconnect packet on page teardown.
   - Open: a browser that loses the network without closing the socket only notices after socket.io's ping timeout
     (about 45 s), longer than the grace for the peer; that is the relay's `peer_timeout` path, unchanged.
+- security-pentester: reviewed pagehide/bfcache, races, half-open links and the e2e helpers.
+  - Fixed (medium): the receiver kept its key and decrypted text on `pagehide`. `PageLifecycle` only ended the root
+    `SenderSession` and the transport; the component-scoped `ReceiverSession` kept its opener (`CryptoKey`) and text,
+    so a page restored from bfcache still showed the old plaintext, and a receiver at the gate could press Open and
+    join with a key it should no longer hold. `PageLifecycle.onHide()` lets the receiver wipe key, text and timers
+    and show "Link already used". Each hide step is isolated, so a throwing handler never skips the explicit leave.
+    Unit tests (receiver: live, gate, join in flight, idempotent; lifecycle: handlers, throwing steps) and an e2e
+    (navigate away and back). Headless Chromium did not put the page in bfcache in that e2e, so it guards the
+    reload path; the bfcache path is covered by the unit tests.
+  - Fixed (low): half-open connections. The relay now pings every 10 s with a 5 s timeout (socket.io default
+    25 s + 20 s), so a silently vanished peer is noticed within 15 s and the sender stops claiming "they can hear
+    you" after at most 15 s + 20 s grace instead of 65 s. Timings are relay options; tests simulate a half-open
+    sender and receiver (pongs suppressed) and pin the defaults.
+  - Checked, no change: `pagehide` during create (epoch cancels, the late session is left) and during join (the
+    teardown cancels the open; an acked join is left), double `pagehide` and leave after the end are no-ops, nothing
+    reacts to `visibilitychange`; the e2e helpers use no fixed sleeps and route only the test pages' sockets.

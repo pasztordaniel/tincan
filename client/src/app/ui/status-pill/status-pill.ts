@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  type ElementRef,
+  input,
+  type OnChanges,
+  type SimpleChanges,
+  viewChild,
+} from '@angular/core';
+import { play } from '../motion';
 import { type CanRole, type LineState, pillContent } from './status-pill.model';
 
 /**
@@ -8,7 +18,7 @@ import { type CanRole, type LineState, pillContent } from './status-pill.model';
 @Component({
   selector: 'app-status-pill',
   template: `
-    <span [class]="'pill pill--' + state()" role="status" [attr.data-icon]="content().icon">
+    <span #pill [class]="'pill pill--' + state()" role="status" [attr.data-icon]="content().icon">
       <svg class="pill__icon" viewBox="0 0 24 12" width="24" height="12" aria-hidden="true">
         @switch (content().icon) {
           @case ('dot') {
@@ -84,12 +94,13 @@ import { type CanRole, type LineState, pillContent } from './status-pill.model';
     }
     @media (prefers-reduced-motion: no-preference) {
       .pill__dot {
-        animation: pill-pulse 1.6s ease-in-out infinite;
+        /* A few beats to say "waiting", then still: it must not tick on while someone reads. */
+        animation: pill-pulse 1.6s ease-in-out 4;
         transform-origin: center;
         transform-box: fill-box;
       }
       .pill__wave {
-        animation: pill-sway 1.8s ease-in-out infinite alternate;
+        animation: pill-sway 0.9s ease-in-out 4 alternate;
         transform-origin: center;
         transform-box: fill-box;
       }
@@ -108,9 +119,26 @@ import { type CanRole, type LineState, pillContent } from './status-pill.model';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StatusPill {
+export class StatusPill implements OnChanges {
   readonly state = input.required<LineState>();
   readonly role = input<CanRole>('sender');
 
   protected readonly content = computed(() => pillContent(this.state(), this.role()));
+
+  private readonly pill = viewChild.required<ElementRef<HTMLElement>>('pill');
+
+  // A small pop when the state changes (not on first render), so the change is seen as well as read.
+  ngOnChanges(changes: SimpleChanges): void {
+    const change = changes['state'];
+    if (!change || change.firstChange) return;
+    play(
+      this.pill().nativeElement,
+      [
+        { transform: 'scale(0.92)', opacity: 0.6 },
+        { transform: 'scale(1.04)' },
+        { transform: 'none' },
+      ],
+      { duration: 360, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)' },
+    );
+  }
 }

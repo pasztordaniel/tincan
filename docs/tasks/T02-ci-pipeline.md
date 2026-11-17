@@ -14,3 +14,6 @@ Actions pinned by commit SHA, `permissions: contents: read`. Then protect `main`
 
 ## Log
 <!-- claim, review, security and QA notes go here, newest last -->
+- senior-dev (from T01 review): the root `prepare` script needs `tsc`, so `npm ci --omit=dev` fails. Decide how
+  install scripts run in CI and production, including npm 11 `allowScripts` (it currently skips the install scripts
+  of esbuild, @parcel/watcher, lmdb and msgpackr-extract).

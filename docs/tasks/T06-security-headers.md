@@ -15,3 +15,5 @@ Express serves the built client with: strict CSP (`default-src 'self'`, `connect
 
 ## Log
 <!-- claim, review, security and QA notes go here, newest last -->
+- senior-dev (from T01 review): disable `inlineCritical` in the Angular build; its beasties output adds an `onload`
+  handler that violates `script-src 'self'`. Plan the `style-src` policy for Angular component styles.

@@ -21,7 +21,7 @@ describe('ReceiverScreen', () => {
   it('renders live text as plain text in a polite live region', async () => {
     const { root } = await render({ phase: 'live', text: '<b>hi</b>' });
     const live = root.querySelector('[aria-live="polite"]')!;
-    expect(live.textContent?.trim()).toBe('<b>hi</b>');
+    expect(live.querySelector('.reader__text')?.textContent).toBe('<b>hi</b>');
     expect(live.querySelector('b')).toBeNull();
   });
 

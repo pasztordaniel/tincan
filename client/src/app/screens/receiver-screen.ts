@@ -60,14 +60,13 @@ let nextId = 0;
           </app-warning-banner>
         }
 
-        <div class="reader screen__full" [class.reader--stale]="stale()">
-          <p class="reader__text" aria-live="polite">
-            @if (text()) {
-              {{ text() }}
-            } @else {
-              <span class="reader__empty">Nothing yet. Their words appear here as they type.</span>
-            }
-          </p>
+        <div class="reader screen__full" [class.reader--stale]="stale()" aria-live="polite">
+          <!-- Text sits flush against the tags: the paragraph is pre-wrap, so template whitespace would show. -->
+          @if (text()) {
+            <p class="reader__text">{{ text() }}</p>
+          } @else {
+            <p class="reader__empty">Nothing yet. Their words appear here as they type.</p>
+          }
         </div>
 
         @if (stale()) {
@@ -95,7 +94,6 @@ let nextId = 0;
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
       background: var(--color-surface);
-      transition: background-color var(--motion-base) var(--ease-out);
     }
     .reader__text {
       font-size: var(--text-lg);

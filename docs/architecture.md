@@ -42,6 +42,11 @@
    `SESSION_IDLE_TTL_MS` (15 min without any frame) and `MAX_SESSION_LIFETIME_MS` (2 h after create), both ending
    with `idle`. The relay cannot tell text from beats and must not be able to, so it cannot enforce idleness itself.
 
+Sender view: `client/src/app/sender/sender-session.ts` owns the sender's key, sealer and timers; components only
+bind signals. Text goes out as full-state frames, debounced 300 ms with a 1 s max wait (`keepLatest`, so only the
+newest state is kept across a resume), `typing` at most 1/s, `beat` every 5 s while connected. A receiver that joins
+gets the current text immediately.
+
 ## Wire protocol (v1)
 `shared/` is the authoritative contract: event names (`EVENTS`), payload and ack types, the socket.io event maps
 (`ClientToServerEvents`, `ServerToClientEvents`), limits and strict runtime validators. Both sides validate every

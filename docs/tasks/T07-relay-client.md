@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| dev | T03 | pr-open | feat/T07-relay-client |
+| dev | T03 | done | feat/T07-relay-client |
 
 ## Goal
 `RelayService` wrapping socket.io-client: typed emit/ack helpers, connection state as a signal

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
+import { MAX_TEXT_LENGTH } from '@tincan/shared';
 import { IlloLineCut, IlloLineSlack, IlloSender } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
 import { StatusPill } from '../ui/status-pill/status-pill';
@@ -55,6 +56,7 @@ let nextId = 0;
           [id]="uid + '-text'"
           class="writer__area"
           rows="7"
+          [attr.maxlength]="maxLength"
           spellcheck="false"
           [readOnly]="ended()"
           [attr.aria-describedby]="ended() ? uid + '-ended' : uid + '-hint'"
@@ -151,6 +153,8 @@ let nextId = 0;
 export class SenderScreen {
   /** Per-instance id prefix: several screens can share a page (see /design). */
   protected readonly uid = 'sender-' + nextId++;
+
+  protected readonly maxLength = MAX_TEXT_LENGTH;
 
   readonly state = input<LineState>('waiting');
   /** Seconds until the relay cuts an idle line; only shown in the `idle` state. */

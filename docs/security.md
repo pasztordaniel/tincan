@@ -53,6 +53,11 @@
 - **R-3 Metadata.** The relay sees who talks to whom, when, roughly how much (bucketed), and when the sender is
   active.
 - **R-4 Endpoint compromise.** Malware, malicious extensions or screen capture on either device defeat everything.
+- **R-5 The link outlives the page.** Clearing the fragment hides the key from the address bar and the session
+  history entry only. The receiver's browser still records the link as opened, key included, in its global history
+  (and in history sync, if enabled), and the sender's link exists wherever it was pasted. JS strings (the key
+  string, decrypted text) cannot be zeroed. A session ends on reload or close, so an old link only reads frames if
+  that session is still live and its receiver slot is free.
 
 ## Review cadence
 - Every PR touching `client/**/crypto*`, `shared/`, server event handlers or headers: `/security-review` +

@@ -70,8 +70,10 @@ export type FragmentLocation = Pick<Location, 'hash' | 'pathname' | 'search'>;
 export type FragmentHistory = Pick<History, 'replaceState' | 'state'>;
 
 /**
- * Removes the fragment from the address bar and the current history entry, so the key does not stay
- * visible, in history, or in a later copy of the URL. Path and query are kept.
+ * Removes the fragment from the address bar and the current session-history entry, so the key does not
+ * stay visible, come back on Back/Forward, or end up in a later copy of the URL. Path and query are kept.
+ * It cannot remove the visit from the browser's global history: the link as opened, key included, stays
+ * there (security.md R-5).
  */
 export function clearFragment(location: FragmentLocation, history: FragmentHistory): void {
   history.replaceState(history.state, '', location.pathname + location.search);

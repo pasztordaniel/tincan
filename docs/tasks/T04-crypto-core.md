@@ -67,3 +67,44 @@ Framework-free TS module in `client/`: generate key, export/import as base64url 
     `isIntegrityError(error)`; `crypto_failure`/`invalid_session` are local bugs. Call `importKeyFromFragment`
     only after the Open click.
   - Open question: none blocking. `isTimestamp` (T03) accepts any `ts`; staleness/clock-skew policy is T10's.
+- security-pentester: security review (`/security-review` + `crypto-review`) of the T04 commits. Verdict: approve.
+  - Checklist: key handling PASS (256 bits from `getRandomValues`; the only `CryptoKey` on either side is
+    non-extractable; nothing logged, stored or put in errors). Encryption PASS (AES-GCM, 128-bit tag, fresh random
+    96-bit IV per frame; AAD = `buildAadBytes(sessionId, seq)` on both sides, which covers protocol version, session
+    and seq; the message type is inside the ciphertext). Padding PASS (every frame type, before encryption,
+    canonical bucket, zero bytes, fatal UTF-8, BOM rejected). Receiving PASS (seq strictly greater, checked before
+    decryption, `lastSeq` advanced only on a fully valid frame, serialised opener). Relay, server and web platform:
+    N/A (no change).
+  - Padding oracle and timing: none an attacker can use. `unpadMessage` only ever sees authenticated plaintext, so
+    an attacker without the key always gets `auth_failed`. The distinct error codes stay local and never go back to
+    the relay. The only timing difference (no decryption for replays) reveals `lastSeq`, which the relay already
+    knows. With a valid key, a relay cannot reach `crypto_failure`, the silent error: `isFrame` fixes the IV and
+    ciphertext lengths, so the only exception `decrypt` can throw is the tag failure (`OperationError`).
+  - S1 (low, fixed in `49a8a6e`): `importKeyString` decoded the key into raw bytes before `importRaw` checked for
+    `crypto.subtle`. The `unsupported` early return skipped the `finally` that zeroes them.
+  - S2 (low, hardening, fixed in `47dbdec`): `openFrame` read `frame.seq` again after awaiting `decrypt`. A change
+    the caller made to the frame object during decryption could make `FrameOpener` accept and record a seq that was
+    never authenticated. The relay cannot do this (socket.io hands over fresh objects), but the invariant now holds
+    regardless: seq is read once.
+  - S3 (low, docs, fixed in the docs commit): `clearFragment` and security.md implied that the key leaves the
+    browser history. `replaceState` only rewrites the session-history entry; the global history (and history sync)
+    keeps the link as opened, key included. This is now added as residual risk R-5, together with the JS strings
+    that cannot be zeroed.
+  - For T09: the key stays in the address bar until the Open click, which is by design (the scanner gate). Call
+    `importKeyFromFragment` before any router navigation could push a new history entry that still has the hash. A
+    reload yields `missing_key` (the session has already ended), so show a clear "link already used or session
+    ended" message.
+- senior-dev: code review of the T04 commits. Verdict: approve.
+  - Mutation testing, with each mutant applied by hand and the client suite run against it. Killed: AAD without
+    seq, AAD without session, replay check `<=` changed to `<`, `lastSeq` advanced on `auth_failed`, opener without
+    serialisation, IV derived from seq, canonical-bucket check removed, zero-padding check removed, BOM stripped,
+    raw key not zeroed, fragment cleared only when valid, every exception mapped to `auth_failed`. Survived and now
+    covered (`88d4f5b`): non-fatal `TextDecoder` (invalid UTF-8 inside a JSON string became U+FFFD), padded and
+    decrypted plaintext not zeroed, `lastSeq` advanced on an authentic frame with bad padding or a bad message. One
+    accepted survivor: zeroing the intermediate `TextEncoder` output in `padMessage`. It is best effort, and the
+    same bytes also live in a JS string.
+  - Nit (deferred to T08): `FrameSealer.seal` pads the message only when its turn in the chain comes. If a caller
+    mutates the message object after calling `seal`, the sealer encrypts the mutated content. T08 must pass a fresh
+    object per call. If that ever becomes awkward, the fix is to pad eagerly, since padding does not depend on seq.
+  - Nit: `test-helpers.ts` is type-checked by the app tsconfig but never bundled, because nothing in the app imports
+    it. This is acceptable.

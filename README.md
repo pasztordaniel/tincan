@@ -100,13 +100,24 @@ and anything it tampers with must be visible to the receiver.
 - **Lifecycle.** Reload, close, **Cut the line** and a 10-minute idle cut end the session for both sides at once; the
   relay has 15-minute and 2-hour backstops.
 
+- **A leaked link can read, not forge.** Publishing needs the sender token, which never leaves the sender tab's
+  memory and is not part of the link. Signing every frame (ECDSA) was evaluated and declined: it only helps against a
+  relay that could just as well ship code that reads the key
+  ([ADR 0009](docs/decisions/0009-signed-frames.md)).
+
 Residual risks are written down, not hidden: a malicious server could ship malicious JavaScript (inherent to browser
-E2E crypto), a leaked link leaks the conversation, and the relay sees metadata (who, when, roughly how much).
-<!-- TODO(T15): if signed frames ship, add "ECDSA-signed frames: a leaked link can read but not forge" here. -->
+E2E crypto), a leaked link leaks the conversation, the relay sees metadata (who, when, roughly how much), and one
+client can fill the session table unless the proxy limits it.
 Full threat model, controls table and residual risks: [docs/security.md](docs/security.md).
 
-<!-- TODO(T13): add the final security audit summary here (scanners run, findings by severity, how each
-Critical/High was fixed or accepted) with a link to the audit report. -->
+**Final security audit (T13).** Secret scanning (gitleaks, tree and history), dependency CVEs (trivy, `npm audit`),
+SAST (semgrep), CI config (checkov), live header and relay-abuse probes and a browser pass over fragment handling and
+XSS found **no Critical or High** issues. Fixed in that pass: the relay now accepts **WebSocket handshakes only**
+(the unused long-polling transport let cross-site pages open engine.io sessions without an `Origin` header), a key
+fragment that arrives **outside `/r`** (a mangled link) is dropped from the address bar and history, and Dependabot
+waits a **seven-day cooldown** before proposing new versions. Accepted: **R-6**, session-table exhaustion by one
+client, to be limited per address at the reverse proxy. Report:
+[docs/security/audit-T13.md](docs/security/audit-T13.md).
 
 ## Tests
 
@@ -149,11 +160,13 @@ tests; only the typing speed and short pauses are timed. It is not part of the t
 - **Code delivery (R-1).** The server that relays frames also serves the JavaScript; a compromised server could ship
   code that steals the key. Mitigation would be a signed, installable client or subresource pinning.
 - **Leaked link (R-2).** The key is in the link: anyone who has it can read a live session whose receiver slot is
-  still free, and the forgery protection comes from the relay's sender token, not from cryptography.
-  <!-- TODO(T15): update when signed frames are done or marked won't do. -->
-  Future: ECDSA-signed frames, and ECDH with a short authentication string or a PAKE, so no secret travels in the
-  link and sessions get forward secrecy.
+  still free. Forging is blocked by the relay's sender token, not by cryptography; signed frames were declined
+  ([ADR 0009](docs/decisions/0009-signed-frames.md)). The real upgrade is ECDH with a short authentication string, or
+  a PAKE: no secret travels in the link, which fixes reading and forging together and adds forward secrecy.
 - **Metadata (R-3).** The relay sees who connects, when, and roughly how much is typed (bucketed).
+- **Session-table exhaustion (R-6).** Sessions are capped globally (10 000) and per socket, but not per address: one
+  scripted client can hold sessions until new threads get `busy`. Availability only; put a per-address connection
+  limit on the reverse proxy ([deployment notes](docs/security.md#deployment-notes)).
 - **The link outlives the page (R-5).** Browser history and wherever the link was pasted keep it; a session only
   ends when a party leaves.
 - **Single process, in memory.** Sessions live in one Node process; horizontal scaling would need sticky sessions or
@@ -169,8 +182,9 @@ The work is split into small tasks on a board, each one branch and one pull requ
 - **Workflow:** [docs/workflow.md](docs/workflow.md): `backlog → ready → in-progress → in-review → qa → pr-open →
   done`. Every branch gets a code review, a security review if it touches the security surface, and a QA pass in a
   real browser before its PR opens. CI runs `npm run verify`; `main` is protected and a human merges every PR.
-- **Decisions:** [docs/decisions/](docs/decisions/README.md), eight ADRs (key in the fragment, full-state frames,
-  relay stack, reload ends the session, padding over decoys, CSP style nonce, strict wire validation, QR library).
+- **Decisions:** [docs/decisions/](docs/decisions/README.md), nine ADRs (key in the fragment, full-state frames,
+  relay stack, reload ends the session, padding over decoys, CSP style nonce, strict wire validation, QR library,
+  no signed frames).
 - **Roles:** [.claude/agents/](.claude/agents): product manager, senior developer, developer, QA tester, security
   pentester and designer, with a human maintainer who approves every merge.
 - **Skills:** [.claude/skills/](.claude/skills): `task-workflow`, `pr-gate`, `crypto-review`, `security-audit`.

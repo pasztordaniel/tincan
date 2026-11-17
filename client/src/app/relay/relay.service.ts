@@ -112,6 +112,7 @@ export class RelayService implements OnDestroy {
     const socket = await this.open();
     if (!socket) return { ok: false, error: 'offline' };
     const result = await this.ack(
+      socket,
       isCreateResult,
       (cb) => socket.emit(EVENTS.create, cb),
       'ack:create',
@@ -130,6 +131,7 @@ export class RelayService implements OnDestroy {
     const socket = await this.open();
     if (!socket) return { ok: false, error: 'offline' };
     const result = await this.ack(
+      socket,
       isJoinResult,
       (cb) => socket.emit(EVENTS.join, { sessionId }, cb),
       'ack:join',
@@ -213,6 +215,10 @@ export class RelayService implements OnDestroy {
       void this.resume(socket, this.session);
     });
     socket.on('disconnect', (reason) => {
+      // An emit while `connected` is still true but the ping already expired (e.g. a laptop waking up)
+      // lands in socket.io's send buffer, which it flushes on the next connection before `connect`
+      // fires, i.e. before the resume. Drop it: nothing sent offline may reach the relay later.
+      socket.sendBuffer = [];
       if (this.socket !== socket) return;
       this.flushAcks();
       if (this._status() === 'ended') return;
@@ -252,6 +258,7 @@ export class RelayService implements OnDestroy {
   private async resume(socket: TincanSocket, session: Session): Promise<void> {
     this._status.set('reconnecting');
     const result = await this.ack(
+      socket,
       isResumeResult,
       (cb) =>
         socket.emit(EVENTS.resume, { sessionId: session.sessionId, token: session.token }, cb),
@@ -339,6 +346,7 @@ export class RelayService implements OnDestroy {
 
   private async emitFrame(socket: TincanSocket, frame: Frame): Promise<FrameOutcome> {
     const result = await this.ack(
+      socket,
       isFrameResult,
       (cb) => socket.emit(EVENTS.frame, frame, cb),
       'ack:frame',
@@ -351,12 +359,16 @@ export class RelayService implements OnDestroy {
   /**
    * Emits with the ack as the last argument (always a function) and validates the answer. Resolves
    * `timeout` / `protocol` / `offline` instead of rejecting, so callers handle one result shape.
+   * Never emits on a disconnected socket (`offline`), so socket.io has nothing to buffer.
    */
   private ack<T extends object>(
+    socket: TincanSocket,
     guard: (value: unknown) => value is T,
     send: (cb: (result: unknown) => void) => void,
     source: ProtocolError['source'],
   ): Promise<AckResult<T>> {
+    // socket.io would buffer an emit on a disconnected socket and send it on the next connection.
+    if (!socket.connected) return Promise.resolve('offline');
     return new Promise((resolve) => {
       const settle = (value: AckResult<T>): void => {
         clearTimeout(timer);

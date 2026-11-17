@@ -9,6 +9,10 @@ type Emitted = { event: string; args: unknown[] };
 /** Stands in for a socket.io client socket: records emits, lets the test fire server events. */
 class FakeSocket {
   connected = false;
+  /** Like socket.io: `connected` can still be true after the ping timeout, and emits then get buffered. */
+  pingExpired = false;
+  /** socket.io's offline buffer, flushed on the next connect before the `connect` event. */
+  sendBuffer: Emitted[] = [];
   disconnectCalls = 0;
   readonly emitted: Emitted[] = [];
   private readonly listeners = new Map<string, Listener[]>();
@@ -39,6 +43,10 @@ class FakeSocket {
     return this;
   }
   emit(event: string, ...args: unknown[]): this {
+    if (!this.connected || this.pingExpired) {
+      this.sendBuffer.push({ event, args });
+      return this;
+    }
     this.emitted.push({ event, args });
     const ack = args[args.length - 1];
     if (this.answers.has(event) && typeof ack === 'function') {
@@ -52,6 +60,9 @@ class FakeSocket {
   }
   serverConnect(): void {
     this.connected = true;
+    this.pingExpired = false;
+    this.emitted.push(...this.sendBuffer);
+    this.sendBuffer = [];
     this.fire('connect');
   }
   serverDrop(reason = 'transport close'): void {
@@ -395,6 +406,20 @@ describe('RelayService', () => {
       socket.serverDrop();
       socket.serverConnect();
       expect(await relay.sendFrame(frame(1))).toBe('dropped');
+      expect(socket.count('frame')).toBe(0);
+    });
+
+    it('discards what socket.io buffered after a ping timeout, so it is not sent before the resume', async () => {
+      await createSession();
+      socket.pingExpired = true; // e.g. a laptop waking up: still `connected`, ping already expired
+      const p = relay.sendFrame(frame(1));
+      socket.serverDrop('ping timeout');
+      expect(await p).toBe('dropped');
+      const before = socket.emitted.length;
+      socket.answers.set('session:resume', { ok: true });
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(socket.emitted.slice(before).map((e) => e.event)).toEqual(['session:resume']);
       expect(socket.count('frame')).toBe(0);
     });
 

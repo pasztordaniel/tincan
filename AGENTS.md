@@ -26,12 +26,16 @@ npm run dev          # shared (tsc watch) + server (tsx watch, :3000) + client (
 npm run build        # shared, then client, then server
 npm start            # build, then serve client + socket.io from one Node process (PORT, default 3000)
 npm test             # unit tests (Vitest in shared, client, server)
-npm run e2e          # Playwright end-to-end tests (Chromium, runs npm start on port 3100)
-npm run lint         # ESLint (incl. angular-eslint) + Prettier check + typecheck
+npm run e2e          # build, then Playwright end-to-end tests (Chromium, server on E2E_PORT, default 3100)
+npm run test:e2e     # Playwright only, against the existing build
+npm run lint         # ESLint (incl. angular-eslint, type-aware promise rules) + Prettier check + typecheck
 npm run format       # Prettier write + ESLint autofix
-npm run verify       # lint, test, build, e2e: everything CI runs, in CI order
+npm run verify       # lint, test, build, e2e (one build): everything CI runs, in CI order
 ```
-Node version: see `.nvmrc` (Node 24 LTS; Angular 22 needs at least 24.15).
+Dev uses fixed ports: do not set `PORT` for `npm run dev`, because `ng serve` reads it too.
+
+Node version: `engines` allows `^22.22.3 || ^24.15.0 || >=26` (the range Angular 22 supports; Node 25 is not
+supported). `.nvmrc` pins the version we develop on, Node 24 LTS (`24.22`).
 `shared/` is consumed through its compiled `dist/`; `npm run dev` rebuilds it on change, and `build`, `test` and
 `lint` rebuild it first.
 

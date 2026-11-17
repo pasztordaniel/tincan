@@ -32,6 +32,6 @@ strict TS, `engines` + `.nvmrc`.
     `npm start` with PORT=3210: `/` 200 with title tincan, `/r/abc` 200 (fallback), `/nope.js` 404, `/healthz` 200,
     socket.io polling handshake OK. `npm run dev`: `:4200` serves the app, `/socket.io` polling and WebSocket upgrade
     (101) pass through the proxy to `:3000`.
-  - Open questions: Angular 22 requires Node `^22.22.3 || ^24.15.0 || >=26`, so `engines` `>=22` is looser than
-    reality (kept as asked); npm 11 `allowScripts` skips install scripts of esbuild, @parcel/watcher, lmdb and
-    msgpackr-extract, and everything still works without them.
+  - Open questions: npm 11 `allowScripts` skips install scripts of esbuild, @parcel/watcher, lmdb and
+    msgpackr-extract, and everything still works without them. (The `engines` question is settled: `engines.node`
+    is now `^22.22.3 || ^24.15.0 || >=26`, the range Angular 22 supports, and `.nvmrc` is `24.22`.)

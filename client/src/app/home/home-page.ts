@@ -1,4 +1,3 @@
-import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,15 +10,17 @@ import { RouterLink } from '@angular/router';
 import { APP_NAME } from '@tincan/shared';
 import { IlloHome } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
+import { SenderSession, type StartError } from '../sender/sender-session';
 import { LinkCard } from '../ui/link-card/link-card';
+import { WarningBanner } from '../ui/warning-banner/warning-banner';
 
 /**
- * Home (screen 1) and the "thread created" dialog (screen 2). The link is a mock until the crypto and
- * relay tasks (T04, T07, T08) generate a real one; Join goes to the design preview for now.
+ * Home (screen 1) and the "thread created" dialog (screen 2). "New thread" creates the key and the relay
+ * session through `SenderSession`; Join opens the sender view, "Not now" drops the session again.
  */
 @Component({
   selector: 'app-home-page',
-  imports: [IlloHome, ButtonDirective, LinkCard, RouterLink],
+  imports: [IlloHome, ButtonDirective, LinkCard, RouterLink, WarningBanner],
   template: `
     <main class="home">
       <app-illo-home class="hero" [width]="320" />
@@ -30,7 +31,20 @@ import { LinkCard } from '../ui/link-card/link-card';
           encrypted.
         </p>
       </div>
-      <button type="button" appButton class="btn--lg" (click)="openThread()">New thread</button>
+      <button
+        type="button"
+        appButton
+        class="btn--lg"
+        [disabled]="session.starting()"
+        (click)="openThread()"
+      >
+        New thread
+      </button>
+      @if (error(); as message) {
+        <app-warning-banner tone="warning" heading="No thread this time">
+          {{ message }}
+        </app-warning-banner>
+      }
       <ul class="trust" aria-label="How tincan keeps it private">
         @for (cue of trustCues; track cue) {
           <li class="trust__item">
@@ -43,12 +57,7 @@ import { LinkCard } from '../ui/link-card/link-card';
       </ul>
     </main>
 
-    <dialog
-      #dialog
-      class="dialog"
-      aria-labelledby="thread-dialog-heading"
-      (close)="open.set(false)"
-    >
+    <dialog #dialog class="dialog" aria-labelledby="thread-dialog-heading" (close)="onClose()">
       @if (open()) {
         <div class="thread">
           <!-- The string draws itself in as the thread is created. -->
@@ -59,9 +68,11 @@ import { LinkCard } from '../ui/link-card/link-card';
           />
           <h2 id="thread-dialog-heading">Your thread is ready</h2>
           <p class="thread__lede">Send this link to the one person who should read along.</p>
-          <app-link-card [link]="link" />
+          @if (session.link(); as link) {
+            <app-link-card [link]="link" />
+          }
           <div class="thread__actions">
-            <a appButton [block]="true" routerLink="/design" fragment="sender">Join</a>
+            <a appButton [block]="true" routerLink="/s" (click)="joined = true">Join</a>
             <button type="button" appButton="ghost" [block]="true" (click)="dialog.close()">
               Not now
             </button>
@@ -142,16 +153,37 @@ export class HomePage {
     'No accounts, no history',
     'One reader per link',
   ] as const;
-  /** Mock link: the fragment is where the real key will live (it never reaches the server). */
-  protected readonly link = `${inject(DOCUMENT).location.origin}/t/demo-3fK9xQ2m#k=placeholder-not-a-real-key`;
+  protected readonly session = inject(SenderSession);
+  protected readonly error = signal<string | null>(null);
+  /** Join was clicked: the session now belongs to the sender view, so closing the dialog must keep it. */
+  protected joined = false;
 
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  protected openThread(): void {
+  protected async openThread(): Promise<void> {
+    this.error.set(null);
+    const started = await this.session.start();
+    if (!started.ok) {
+      this.error.set(ERRORS[started.error]);
+      return;
+    }
+    this.joined = false;
     this.open.set(true);
     const dialog = this.dialog().nativeElement;
     // jsdom (unit tests) lacks showModal; real browsers get the modal with its focus trap and Escape.
     if (typeof dialog.showModal === 'function') dialog.showModal();
     else dialog.setAttribute('open', '');
   }
+
+  protected onClose(): void {
+    this.open.set(false);
+    if (!this.joined) this.session.end();
+  }
 }
+
+const ERRORS: Record<StartError, string> = {
+  crypto: 'This browser cannot create an encrypted thread (it needs a secure connection).',
+  busy: 'The relay is busy right now. Try again in a moment.',
+  offline: 'Could not reach the relay. Check your connection and try again.',
+  failed: 'Something went wrong creating the thread. Try again.',
+};

@@ -49,6 +49,10 @@ WebSocket synchronously, so the peer sees `peer_left` at once instead of after t
 bfcache (`pageshow` with `persisted`) is ended again: its key and token are gone, so it shows the ended state.
 The component-scoped `ReceiverSession` registers through `PageLifecycle.onHide()` and drops its key, text and timers
 too: a restored receiver page says "Link already used", like a reload.
+Cut the line: both views have a button (inline two-step confirm, `ui/cut-line/cut-line.ts`) that ends the session on
+purpose. The sender goes through the idle-cut path (`SenderSession.cutLine()`: key, link and timers dropped, explicit
+`leave()`), the receiver through the `pagehide` cleanup (`ReceiverSession.cutLine()`), so the peer sees `peer_left` at
+once. The side that cut says "You cut the line" and, like every ended state, keeps the last text readable.
 Network blips (WebSocket closed, relay unreachable) are the other path: both sides show "Line is slack,
 reconnecting...", the client resumes with its token through socket.io's reconnection (500 ms to 3 s backoff, so no
 extra reaction to the browser's `online` event is needed), and the sender resends its latest text.

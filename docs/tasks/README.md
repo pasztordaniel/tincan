@@ -20,6 +20,7 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T13](T13-security-pass.md) | Security review + audit | security-pentester | continuous | backlog |
 | [T14](T14-readme-final.md) | Final README | pm | all | backlog |
 | [T15](T15-signed-frames.md) | Stretch: signed frames | senior-dev | T04 | backlog |
+| [T16](T16-cut-the-line.md) | Cut the line button | dev | T08, T09, T10 | in-review |
 
 ## Parallel lanes
 ```

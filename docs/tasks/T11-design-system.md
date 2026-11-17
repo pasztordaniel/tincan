@@ -53,3 +53,11 @@ No remote fonts or assets (CSP). Screens, states and illustrations: [`docs/desig
   `/design#motion`. Bundle against the previous round: initial 273.16 kB to 279.30 kB (70.75 kB to
   73.22 kB transfer), global CSS 7.08 kB to 11.69 kB (illustration motion lives there once instead of in
   every illustration component), design-page chunk 24.73 kB to 29.46 kB.
+- designer: in-review, rebased onto main (T02, T03, T06); the stacked T01 commits are dropped. Runs under
+  the T06 policy unchanged: no CSP adjustments were needed. The grain backdrop is a same-origin
+  `url('/grain.svg')` (img-src 'self'), Pacifico and Caveat are bundled woff2 (font-src 'self'), motion uses
+  classes, `[style.x]` bindings and the Web Animations API (CSSOM, not inline style attributes), and no
+  `innerHTML` reaches a Trusted Types sink. `/design` added to `e2e/tests/csp.spec.ts`; a manual pass that
+  also fires the frame pulse, the pill change and all seven replays showed no violations. One template fix
+  for `noUncheckedIndexedAccess` (pill demo). `npm run verify` green; initial total 280.38 kB (73.63 kB
+  transfer) with main's T03/T06 code included.

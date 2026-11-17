@@ -16,7 +16,7 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T09](T09-receiver-view.md) | Receiver view | dev | T04, T07, T11 | pr-open |
 | [T10](T10-lifecycle-and-staleness.md) | Disconnect, resume, staleness | dev | T05, T08, T09 | backlog |
 | [T11](T11-design-system.md) | Design system + logo | designer | T01 | done |
-| [T12](T12-e2e-suite.md) | End-to-end suite | qa-tester | T08, T09 | backlog |
+| [T12](T12-e2e-suite.md) | End-to-end suite | qa-tester | T08, T09 | in-review |
 | [T13](T13-security-pass.md) | Security review + audit | security-pentester | continuous | backlog |
 | [T14](T14-readme-final.md) | Final README | pm | all | backlog |
 | [T15](T15-signed-frames.md) | Stretch: signed frames | senior-dev | T04 | backlog |

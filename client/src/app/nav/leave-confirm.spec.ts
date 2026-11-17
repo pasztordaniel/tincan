@@ -1,6 +1,13 @@
-import { Component, runInInjectionContext, signal, type WritableSignal } from '@angular/core';
+import {
+  Component,
+  inject,
+  runInInjectionContext,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, type Navigation } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { LeaveConfirm, confirmLeave } from './leave-confirm';
 
 @Component({ template: '' })
@@ -79,5 +86,63 @@ describe('confirmLeave', () => {
     watchingPage(signal(true));
     expect(runGuard('popstate')).toBe(true);
     expect(TestBed.inject(LeaveConfirm).asking()).toBe(false);
+  });
+});
+
+@Component({ template: 'live' })
+class LivePage {
+  constructor() {
+    inject(LeaveConfirm).watch(signal(true));
+  }
+}
+
+describe('confirmLeave through the router', () => {
+  async function onLivePage() {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          { path: '', component: Page },
+          { path: 'live', component: LivePage, canDeactivate: [confirmLeave] },
+        ]),
+      ],
+    });
+    const harness = await RouterTestingHarness.create('/live');
+    return { router: TestBed.inject(Router), leave: TestBed.inject(LeaveConfirm), harness };
+  }
+
+  /** Lets the router run its guards (the held navigation never settles, so no `whenStable`). */
+  async function until(condition: () => boolean) {
+    for (let i = 0; i < 50 && !condition(); i++) {
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.tick();
+    }
+    expect(condition()).toBe(true);
+  }
+
+  it('withdraws the question when a newer navigation supersedes the held one', async () => {
+    const { router, leave } = await onLivePage();
+    const held = router.navigateByUrl('/');
+    await until(() => leave.asking());
+    const newer = router.navigateByUrl('/live#x');
+    await until(() => !leave.asking());
+    await expect(held).resolves.toBe(false);
+    await expect(newer).resolves.toBe(true);
+    expect(router.url).toBe('/live#x');
+    // Leave now has nothing to answer and does not navigate.
+    leave.answer(true);
+    await until(() => router.currentNavigation() === null);
+    expect(router.url).toBe('/live#x');
+  });
+
+  it('a later question is not withdrawn by the cancel of the earlier one', async () => {
+    const { router, leave } = await onLivePage();
+    const first = router.navigateByUrl('/');
+    await until(() => leave.asking());
+    const second = router.navigateByUrl('/?again=1');
+    await expect(first).resolves.toBe(false);
+    await until(() => leave.asking());
+    leave.answer(true);
+    await expect(second).resolves.toBe(true);
+    expect(router.url).toBe('/?again=1');
   });
 });

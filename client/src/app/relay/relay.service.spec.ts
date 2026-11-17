@@ -346,6 +346,40 @@ describe('RelayService', () => {
       expect(sent[0]?.args[0]).toEqual(frame(50));
     });
 
+    it('sends a kept frame only once across two resumes', async () => {
+      await createSession();
+      socket.answers.set('session:resume', { ok: true });
+      socket.answers.set('frame', { ok: true });
+      socket.serverDrop();
+      await relay.sendFrame(frame(1), { keepLatest: true });
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      socket.serverDrop();
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(socket.count('session:resume')).toBe(2);
+      expect(socket.count('frame')).toBe(1);
+    });
+
+    it('does not keep a frame when the relay cut us (no reconnect follows)', async () => {
+      await createSession();
+      socket.serverDrop('io server disconnect');
+      expect(await relay.sendFrame(frame(1), { keepLatest: true })).toBe('dropped');
+    });
+
+    it('forgets a kept frame when the session is dropped', async () => {
+      await createSession();
+      socket.serverDrop();
+      await relay.sendFrame(frame(1), { keepLatest: true });
+      await createSession(); // replaces the old session
+      socket.answers.set('session:resume', { ok: true });
+      socket.serverDrop();
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(relay.status()).toBe('connected');
+      expect(socket.count('frame')).toBe(0);
+    });
+
     it('does not send the kept frame when the resume fails', async () => {
       await createSession();
       socket.serverDrop();
@@ -400,6 +434,142 @@ describe('RelayService', () => {
       expect(await p).toMatchObject({ ok: true, senderToken: TOK2 });
       expect(relay.status()).toBe('connected');
       expect(relay.ended()).toBeNull();
+    });
+  });
+
+  describe('races', () => {
+    it('a create that fails late does not tear down a newer join', async () => {
+      const first = relay.create();
+      const a = sock(0);
+      a.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(a.count('session:create')).toBe(1); // ack pending
+      const second = relay.join(SID); // tears down `a`, which settles `first` as offline
+      const b = sock(1);
+      b.answers.set('session:join', { ok: true, receiverToken: TOK });
+      expect(await first).toEqual({ ok: false, error: 'offline' });
+      expect(b.disconnectCalls).toBe(0);
+      b.serverConnect();
+      expect(await second).toEqual({ ok: true, receiverToken: TOK });
+      expect(relay.status()).toBe('connected');
+    });
+
+    it('leave() between the create ack and its continuation keeps the session ended', async () => {
+      const p = relay.create();
+      socket = sock(0);
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0); // let create() emit
+      socket.lastAck('session:create')({ ok: true, sessionId: SID, senderToken: TOK });
+      relay.leave(); // before the awaiting create() resumes
+      expect(await p).toEqual({ ok: false, error: 'offline' });
+      expect(relay.status()).toBe('ended');
+      expect(relay.ended()).toBe('left');
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('leave() while connecting settles create at once and leaves no timer', async () => {
+      const p = relay.create();
+      relay.leave();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(await p).toEqual({ ok: false, error: 'offline' });
+      expect(relay.status()).toBe('ended');
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('a create acked on a link that broke meanwhile resumes within the grace', async () => {
+      const p = relay.create();
+      socket = sock(0);
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0); // let create() emit
+      socket.lastAck('session:create')({ ok: true, sessionId: SID, senderToken: TOK });
+      socket.connected = false; // the drop event has not been delivered yet
+      expect(await p).toMatchObject({ ok: true });
+      expect(relay.status()).toBe('reconnecting');
+      await vi.advanceTimersByTimeAsync(RECONNECT_GRACE_MS + 1);
+      expect(relay.ended()).toBe('grace_expired');
+    });
+
+    it('a resume acked just before the link breaks again does not report connected', async () => {
+      await createSession();
+      socket.serverDrop();
+      await relay.sendFrame(frame(1), { keepLatest: true });
+      socket.serverConnect();
+      socket.lastAck('session:resume')({ ok: true });
+      socket.serverDrop(); // before the awaiting resume continues
+      await vi.advanceTimersByTimeAsync(0);
+      expect(relay.status()).toBe('reconnecting');
+      expect(socket.count('frame')).toBe(0);
+      // the grace from the first drop still runs
+      await vi.advanceTimersByTimeAsync(RECONNECT_GRACE_MS);
+      expect(relay.ended()).toBe('grace_expired');
+    });
+
+    it('the grace runs from the first drop, not from a later one', async () => {
+      await createSession();
+      socket.serverDrop();
+      await vi.advanceTimersByTimeAsync(RECONNECT_GRACE_MS / 2);
+      socket.serverConnect(); // resume pending
+      socket.serverDrop();
+      await vi.advanceTimersByTimeAsync(RECONNECT_GRACE_MS / 2 + 1);
+      expect(relay.ended()).toBe('grace_expired');
+    });
+
+    it('ignores events from a socket it has left', async () => {
+      await createSession();
+      const frames: Frame[] = [];
+      const ended: RelayEndReason[] = [];
+      relay.frames$.subscribe((f) => frames.push(f));
+      relay.ended$.subscribe((r) => ended.push(r));
+      relay.leave();
+      socket.fire('frame', frame(1));
+      socket.fire('peer', { state: 'connected' });
+      socket.fire('session:ended', { reason: 'peer_left' });
+      socket.serverDrop();
+      expect(frames).toEqual([]);
+      expect(ended).toEqual([]);
+      expect(relay.peer()).toBeNull();
+      expect(relay.ended()).toBe('left');
+    });
+
+    it('a new session starts without the old peer state', async () => {
+      await createSession();
+      socket.fire('peer', { state: 'connected' });
+      await createSession();
+      expect(relay.peer()).toBeNull();
+    });
+  });
+
+  describe('timers', () => {
+    it('leaves no timer after create, a frame ack and a resume', async () => {
+      await createSession();
+      expect(vi.getTimerCount()).toBe(0);
+      socket.answers.set('frame', { ok: true });
+      await relay.sendFrame(frame(1));
+      expect(vi.getTimerCount()).toBe(0);
+      socket.serverDrop();
+      socket.answers.set('session:resume', { ok: true });
+      socket.serverConnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(relay.status()).toBe('connected');
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('leave() during the grace clears it', async () => {
+      await createSession();
+      socket.serverDrop();
+      expect(vi.getTimerCount()).toBe(1);
+      relay.leave();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('leave() during a resume clears the grace and the ack timer', async () => {
+      await createSession();
+      socket.serverDrop();
+      socket.serverConnect();
+      relay.leave();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(vi.getTimerCount()).toBe(0);
+      expect(relay.ended()).toBe('left');
     });
   });
 

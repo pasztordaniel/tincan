@@ -104,6 +104,8 @@ export class RelayService implements OnDestroy {
   private graceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly pendingAcks = new Set<() => void>();
   private keptFrame: Frame | null = null;
+  /** Settles a pending `open()` as failed, so a teardown never leaves it (and its timer) hanging. */
+  private cancelOpen: (() => void) | null = null;
 
   /** Opens a session as the sender. */
   async create(): Promise<CreateOutcome> {
@@ -114,11 +116,12 @@ export class RelayService implements OnDestroy {
       (cb) => socket.emit(EVENTS.create, cb),
       'ack:create',
     );
+    // Torn down or replaced meanwhile (leave(), another create/join): that state is not ours to touch.
+    if (this.socket !== socket) return { ok: false, error: 'offline' };
     if (typeof result === 'string' || !result.ok) {
       return this.failOpen(typeof result === 'string' ? result : result.error);
     }
-    this.session = { sessionId: result.sessionId, token: result.senderToken };
-    this.setConnected();
+    this.bind(socket, { sessionId: result.sessionId, token: result.senderToken });
     return { ok: true, sessionId: result.sessionId, senderToken: result.senderToken };
   }
 
@@ -131,11 +134,11 @@ export class RelayService implements OnDestroy {
       (cb) => socket.emit(EVENTS.join, { sessionId }, cb),
       'ack:join',
     );
+    if (this.socket !== socket) return { ok: false, error: 'offline' };
     if (typeof result === 'string' || !result.ok) {
       return this.failOpen(typeof result === 'string' ? result : result.error);
     }
-    this.session = { sessionId, token: result.receiverToken };
-    this.setConnected();
+    this.bind(socket, { sessionId, token: result.receiverToken });
     return { ok: true, receiverToken: result.receiverToken };
   }
 
@@ -183,10 +186,13 @@ export class RelayService implements OnDestroy {
       const done = (ok: boolean): void => {
         clearTimeout(timer);
         socket.off('connect', onConnect);
+        if (this.cancelOpen === cancel) this.cancelOpen = null;
         resolve(ok);
       };
+      const cancel = (): void => done(false);
       const onConnect = (): void => done(true);
-      const timer = setTimeout(() => done(false), CONNECT_TIMEOUT_MS);
+      const timer = setTimeout(cancel, CONNECT_TIMEOUT_MS);
+      this.cancelOpen = cancel;
       socket.on('connect', onConnect);
       if (socket.connected) done(true);
       else socket.connect();
@@ -260,10 +266,24 @@ export class RelayService implements OnDestroy {
       this.finish('session_lost');
       return;
     }
+    // Acked, but the link broke before we got here: the disconnect started the grace, the next
+    // `connect` resumes again.
+    if (!socket.connected) return;
     this.setConnected();
     const kept = this.keptFrame;
     this.keptFrame = null;
     if (kept) void this.emitFrame(socket, kept);
+  }
+
+  /** A create/join was acked: the slot is ours. Normally connected; if the link broke meanwhile, resume. */
+  private bind(socket: TincanSocket, session: Session): void {
+    this.session = session;
+    if (socket.connected) {
+      this.setConnected();
+      return;
+    }
+    this._status.set('reconnecting');
+    this.startGrace();
   }
 
   private setConnected(): void {
@@ -301,6 +321,9 @@ export class RelayService implements OnDestroy {
 
   private teardown(): void {
     this.clearGrace();
+    const cancelOpen = this.cancelOpen;
+    this.cancelOpen = null;
+    cancelOpen?.();
     this.flushAcks();
     this.keptFrame = null;
     this.session = null;

@@ -6,7 +6,6 @@ import {
   IlloLineCut,
   IlloLineFrayed,
   IlloLineSlack,
-  IlloLineSnip,
   IlloReceiver,
   IlloSender,
 } from '../illustrations';
@@ -18,7 +17,29 @@ import { ButtonDirective } from '../ui/button/button';
 import { LinkCard } from '../ui/link-card/link-card';
 import { StatusPill } from '../ui/status-pill/status-pill';
 import type { LineState } from '../ui/status-pill/status-pill.model';
+import { motionAllowed } from '../ui/motion';
 import { WarningBanner } from '../ui/warning-banner/warning-banner';
+
+/** One-shot illustration animations shown in the Motion section; Replay remounts the art. */
+export const MOTION_DEMOS = [
+  { id: 'draw', caption: 'String draws in', trigger: 'Home load, thread created, line goes live.' },
+  {
+    id: 'wobble',
+    caption: 'Pick-up wobble',
+    trigger: 'The receiver picks up and the line goes live.',
+  },
+  { id: 'cut', caption: 'Scissors close', trigger: 'The line is cut (ended).' },
+  { id: 'knot', caption: 'Knot ties', trigger: 'The line is busy: a second string ties on.' },
+  { id: 'fray', caption: 'Fray spreads', trigger: 'A frame fails its integrity check.' },
+  {
+    id: 'snip',
+    caption: 'Scissors warn',
+    trigger: 'The sender has gone idle; snaps twice, then rests.',
+  },
+  { id: 'sway', caption: 'Slack sway', trigger: 'Reconnecting; sways twice, then hangs still.' },
+] as const;
+
+export type MotionDemoId = (typeof MOTION_DEMOS)[number]['id'];
 
 const SAMPLE =
   'Meet at the north gate at 7.\nBring the blue notebook, and do not tell anyone else about the plan.';
@@ -45,7 +66,6 @@ const SAMPLE =
     IlloLineBusy,
     IlloLineCut,
     IlloLineSlack,
-    IlloLineSnip,
     IlloLineFrayed,
   ],
   template: `
@@ -217,9 +237,80 @@ const SAMPLE =
               <app-illo-line-busy [width]="140" />
               <app-illo-line-cut [width]="140" />
               <app-illo-line-slack [width]="140" />
-              <app-illo-line-snip [width]="140" />
+              <app-illo-sender [width]="140" [snip]="true" />
               <app-illo-line-frayed [width]="140" />
             </div>
+          </figure>
+        </div>
+      </section>
+
+      <section id="motion" aria-labelledby="g-motion">
+        <h2 id="g-motion">Motion</h2>
+        <p class="note">
+          Every animation plays once, on the event that triggers it, and ends on the static pose.
+          @if (reducedMotion) {
+            <strong
+              >Reduced motion is on in this browser, so each demo shows its static fallback.</strong
+            >
+          }
+        </p>
+        <div class="grid">
+          @for (demo of motionDemos; track demo.id) {
+            <figure class="frame card">
+              <figcaption>{{ demo.caption }}</figcaption>
+              @for (k of [replays()[demo.id] ?? 0]; track k) {
+                @switch (demo.id) {
+                  @case ('draw') {
+                    <app-illo-home [width]="280" />
+                  }
+                  @case ('wobble') {
+                    <app-illo-receiver [width]="280" />
+                  }
+                  @case ('cut') {
+                    <app-illo-line-cut [width]="280" />
+                  }
+                  @case ('knot') {
+                    <app-illo-line-busy [width]="280" />
+                  }
+                  @case ('fray') {
+                    <app-illo-line-frayed [width]="280" />
+                  }
+                  @case ('snip') {
+                    <app-illo-sender [width]="280" [snip]="true" />
+                  }
+                  @case ('sway') {
+                    <app-illo-line-slack [width]="280" />
+                  }
+                }
+              }
+              <p class="note">{{ demo.trigger }}</p>
+              <button type="button" appButton="secondary" (click)="replay(demo.id)">
+                Replay
+                <span class="visually-hidden">{{ demo.caption }}</span>
+              </button>
+            </figure>
+          }
+          <figure class="frame card">
+            <figcaption>Frame pulse</figcaption>
+            <div class="pair">
+              <app-illo-sender [width]="200" [pulse]="frames()" />
+              <app-illo-receiver [width]="200" [pulse]="frames()" />
+            </div>
+            <p class="note">
+              Each frame sent or received runs a bright dash along the live string, at most one
+              every 320 ms.
+            </p>
+            <button type="button" appButton="secondary" (click)="sendFrame()">Send a frame</button>
+          </figure>
+          <figure class="frame card">
+            <figcaption>Pill change</figcaption>
+            <div class="stack stack--center">
+              <app-status-pill [state]="pillStates[pillIndex()]" role="sender" />
+            </div>
+            <p class="note">
+              The pill pops when the state changes; the waiting dot beats four times.
+            </p>
+            <button type="button" appButton="secondary" (click)="nextPill()">Next state</button>
           </figure>
         </div>
       </section>
@@ -300,6 +391,26 @@ const SAMPLE =
       flex-wrap: wrap;
       gap: var(--space-2);
     }
+    .note {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      text-align: center;
+      max-width: 40rem;
+    }
+    section > .note {
+      text-align: start;
+    }
+    .pair {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+    .stack--center {
+      justify-items: center;
+      min-height: 4rem;
+      align-content: center;
+    }
     .illos {
       display: flex;
       flex-wrap: wrap;
@@ -323,6 +434,24 @@ export class DesignPage {
     },
   ];
   protected readonly pickupPhase = signal<ReceiverPhase>('pickup');
+  protected readonly motionDemos = MOTION_DEMOS;
+  protected readonly reducedMotion = !motionAllowed();
+  protected readonly replays = signal<Partial<Record<MotionDemoId, number>>>({});
+  protected readonly frames = signal(0);
+  protected readonly pillIndex = signal(0);
+
+  protected replay(id: MotionDemoId): void {
+    this.replays.update((r) => ({ ...r, [id]: (r[id] ?? 0) + 1 }));
+  }
+
+  protected sendFrame(): void {
+    this.frames.update((n) => n + 1);
+  }
+
+  protected nextPill(): void {
+    this.pillIndex.update((i) => (i + 1) % this.pillStates.length);
+  }
+
   protected readonly pillStates: LineState[] = [
     'waiting',
     'connected',

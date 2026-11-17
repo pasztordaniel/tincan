@@ -36,3 +36,25 @@ invalid link.
     `e2e/tests/receiver.spec.ts` (gate, fragment cleared, reload, busy, invalid, unknown thread) using a minimal
     socket.io sender helper over Node's WebSocket (no new dependency). The full sender to receiver flow is T12.
   - Open: on ack timeout during join the slot may have been taken server-side, so a retry can show "busy".
+- security-pentester: reviewed bc607d0..50e4a6c (`/security-review` + `crypto-review`, senior-dev hat on races).
+  Fragment read and cleared synchronously in the page constructor, key non-extractable, not logged, stored, titled or
+  sent; no relay traffic before Pick up (e2e); frames only through the one `FrameOpener`, serialized; decrypted text
+  by interpolation only; no template `style=""`. Findings, all fixed with tests:
+  - Medium: staleness used the arrival time, so a relay holding frames back and replaying them at the usual pace
+    kept old text looking live forever. Freshness now comes from the encrypted `ts`, relative to the smallest
+    `arrival - ts` seen (absorbs clock skew); an added delay of 15 s turns the view stale. A delay present from the
+    very first frame cannot be told from skew (security.md, Withholding / freezing). `27bd91d`
+  - Low: a retried Open created a new `FrameOpener` (`lastSeq` back to 0), so a frame accepted during a failed
+    attempt could be replayed after the retry. One opener per visit now. `5a4f090`
+  - Low: a page destroyed while the join was in flight never left, holding the receiver slot with nobody reading.
+    It leaves as soon as that join resolves. `5a4f090`
+  - Low: `/r`, `/r/<id>/x` fell through to the `**` redirect, which keeps the fragment: the key landed in the home
+    page's address bar. Every `/r` path now reaches the receiver page (matcher), which clears it. `68ed42a`
+  - Nit: after the line ended the tick kept running, "typing" could show under "line cut", and frames after a bare
+    `peer: gone` could still replace the final text. All stopped. `a490f5a`
+  - Accepted, not cheaply fixable: after a join ack timeout `RelayService` disconnects explicitly. If the relay had
+    bound the slot on a live socket, that ends the session (the sender sees `peer_left`, a retry shows "Nothing on
+    this line"); if the connection had dropped, the slot sits in its 20 s grace and a retry shows "busy", then "Nothing
+    on this line". The receiver token never arrived, so the slot cannot be resumed.
+  - Accepted (R-5): the Angular router keeps the original URL, fragment included, in memory (`ActivatedRoute`
+    snapshot); never written back to the address bar (e2e checks after navigation ends).

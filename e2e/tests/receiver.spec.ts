@@ -67,6 +67,18 @@ test.describe('receiver link', () => {
     expect(await page.evaluate(() => location.hash)).toBe('');
   });
 
+  test('a mangled receiver path still clears the key instead of carrying it to the home page', async ({
+    page,
+  }) => {
+    for (const path of [`/r/${'A'.repeat(22)}/extra`, '/r', `/r/${'A'.repeat(22)}/`]) {
+      await page.goto(`${path}#${SAMPLE_KEY}`);
+      await expect(
+        page.getByRole('heading', { name: /Invalid link|Someone is on the line/ }),
+      ).toBeVisible();
+      expect(await page.evaluate(() => location.hash)).toBe('');
+    }
+  });
+
   test('an unknown thread ends at the gate with a clear message', async ({ page }) => {
     await page.goto(`/r/${'A'.repeat(22)}#${SAMPLE_KEY}`);
     await page.getByRole('button', OPEN).click();

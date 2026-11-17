@@ -30,12 +30,10 @@ export interface TincanServer {
 /**
  * Decides whether a socket.io handshake may proceed, based on its `Origin` and `Host` headers.
  *
- * A missing Origin is allowed: browsers may omit it on same-origin GETs (socket.io's first polling
- * request). Cross-site pages can also send Origin-less no-cors GETs (e.g. an <img> pointing at the
- * polling URL), which open an engine.io handshake, but they cannot read the returned sid, so they
- * can never complete the socket.io connect. Therefore a completed handshake is NOT proof of same
- * origin; session authorisation (T05) relies on tokens. Every WebSocket handshake carries Origin.
- * Non-browser clients can forge any header; this check defends against cross-site pages only.
+ * A missing Origin is allowed: only non-browser clients omit it, because the server accepts WebSocket
+ * handshakes only (long-polling is disabled) and browsers send Origin on every one. Non-browser
+ * clients can forge any header anyway; this check defends against cross-site pages only, and
+ * session authorisation (T05) relies on tokens, never on the handshake.
  */
 export function isAllowedOrigin(origin: string | undefined, host: string | undefined): boolean {
   if (origin === undefined) return true;
@@ -142,6 +140,11 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
     // Notices a half-open connection within 15 s instead of socket.io's 45 s (see the defaults).
     pingInterval: timing.pingIntervalMs,
     pingTimeout: timing.pingTimeoutMs,
+    // The client connects over WebSocket only (relay-socket.ts), so the server offers nothing else.
+    // Long-polling handshakes are plain GETs that cross-site pages can send without an Origin (an
+    // <img> or no-cors fetch), and each one opened an engine.io session; a WebSocket handshake always
+    // carries Origin, so the origin check below now applies to every connection a browser can open.
+    transports: ['websocket'],
     // The client bundles socket.io-client itself; no need to serve /socket.io/socket.io.js.
     serveClient: false,
     // No CORS headers are set, but WebSocket handshakes are not covered by CORS at all, so

@@ -140,4 +140,21 @@ test.describe('lifecycle', () => {
       await pair.close();
     }
   });
+
+  test('a receiver that navigates away and back sees neither the old text nor a live line', async ({
+    browser,
+    baseURL,
+  }) => {
+    const pair = await connectedPair(browser, baseURL!);
+    try {
+      await pair.receiver.goto('/');
+      await expect(pair.sender.getByText('Line cut')).toBeVisible(FAST);
+      // Restored from bfcache or reloaded, the page must not hold the key or the plaintext any more.
+      await pair.receiver.goBack();
+      await expect(pair.receiver.getByRole('heading', { name: 'Link already used' })).toBeVisible();
+      await expect(pair.receiver.getByText('first words')).toHaveCount(0);
+    } finally {
+      await pair.close();
+    }
+  });
 });

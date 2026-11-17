@@ -69,6 +69,30 @@ describe('PageLifecycle', () => {
     expect(relay.leave).toHaveBeenCalledOnce();
   });
 
+  it('runs registered hide handlers until they unregister', () => {
+    const { win, lifecycle } = setup();
+    const handler = vi.fn();
+    const off = lifecycle.onHide(handler);
+    win.dispatchEvent(pageEvent('pagehide', false));
+    expect(handler).toHaveBeenCalledOnce();
+    off();
+    win.dispatchEvent(pageEvent('pageshow', true));
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it('still ends the sender and leaves when a hide handler throws', () => {
+    const { win, relay, sender, lifecycle } = setup();
+    lifecycle.onHide(() => {
+      throw new Error('boom');
+    });
+    sender.end.mockImplementationOnce(() => {
+      throw new Error('boom');
+    });
+    expect(() => win.dispatchEvent(pageEvent('pagehide', false))).not.toThrow();
+    expect(sender.end).toHaveBeenCalledOnce();
+    expect(relay.leave).toHaveBeenCalledOnce();
+  });
+
   it('is a no-op without a window', () => {
     TestBed.configureTestingModule({
       providers: [

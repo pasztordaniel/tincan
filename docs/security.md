@@ -20,12 +20,12 @@
 | Threat | Control | Where |
 |---|---|---|
 | Relay reads text | E2E AES-256-GCM in browser; key only in fragment + memory | `client` crypto |
-| Key reaches server / logs / referrer | Fragment is never sent in HTTP; cleared via `history.replaceState` before it is even validated; `Referrer-Policy: no-referrer`; key imported non-extractable on both sides (the sender never holds an extractable `CryptoKey`), raw bytes zeroed after import; never persisted; crypto code never logs and its errors carry codes only | `client`, `server` headers |
+| Key reaches server / logs / referrer | Fragment is never sent in HTTP; cleared via `history.replaceState` before it is even validated, on every `/r` path (a mangled link is cleared too, never redirected with its fragment); `Referrer-Policy: no-referrer`; key imported non-extractable on both sides (the sender never holds an extractable `CryptoKey`), raw bytes zeroed after import; never persisted; crypto code never logs and its errors carry codes only | `client`, `server` headers |
 | Ciphertext tampering | GCM tag check; then canonical padding (smallest bucket, zero bytes) and strict message validation; every failure is a typed integrity error, never a raw exception; failed frames dropped + UI warning, last good text kept | `client` |
 | Replay / reorder | Monotonic `seq` in AAD; receiver accepts only `seq > lastSeq`, checked before decryption and advanced only after a fully valid frame; frames are opened one at a time so concurrent arrivals cannot race the check | `shared`, `client` |
 | Cross-session splicing | `sessionId` in AAD | `shared`, `client` |
 | IV reuse | Fresh random 96-bit IV per frame (tested) | `client` |
-| Withholding / freezing | Encrypted heartbeat with timestamp; stale indicator | `client` |
+| Withholding / freezing | Encrypted heartbeat every 5 s; the receiver judges freshness by the encrypted sender timestamp (relative to the smallest `arrival - ts` seen, which absorbs clock skew), not by arrival, so frames the relay holds back and replays at the usual pace still turn the view stale after 15 s. A delay present from the first frame on is indistinguishable from skew | `client/src/app/receiver` |
 | Length / typing-rhythm leakage | Size-bucket padding; debounce; typing+heartbeat frames padded like content | `client` |
 | Injection by id-holder | Only the socket authenticated with the sender token may publish; receiver socket is receive-only | `server` |
 | Second receiver / scanner burns slot | Single receiver lock; receiver joins only after explicit **Open** click | `server`, `client` |

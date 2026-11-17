@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IlloLineCut } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
@@ -13,10 +13,8 @@ let nextId = 0;
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
       <app-illo-line-cut class="hero hero--screen" [width]="280" />
       <div class="screen__body">
-        <h2 [id]="uid + '-heading'">Line cut</h2>
-        <p class="screen__lede">
-          The other can hung up or the thread ended. Nothing more will be delivered on this line.
-        </p>
+        <h2 [id]="uid + '-heading'">{{ heading() }}</h2>
+        <p class="screen__lede">{{ message() }}</p>
       </div>
       <a appButton="secondary" routerLink="/">Start a new thread</a>
     </section>
@@ -26,4 +24,10 @@ let nextId = 0;
 export class LineCutScreen {
   /** Per-instance id prefix: several screens can share a page (see /design). */
   protected readonly uid = 'cut-' + nextId++;
+
+  /** Defaults are the design's copy; views pass a reason-specific message (ended, invalid link). */
+  readonly heading = input('Line cut');
+  readonly message = input(
+    'The other can hung up or the thread ended. Nothing more will be delivered on this line.',
+  );
 }

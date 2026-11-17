@@ -79,6 +79,10 @@ let nextId = 0;
           }
         </div>
 
+        @if (typing() && !stale()) {
+          <p class="typing-hint screen__full">They are typing...</p>
+        }
+
         @if (stale()) {
           <p class="stale-hint screen__full">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -123,6 +127,10 @@ let nextId = 0;
     .reader--stale .reader__text {
       color: var(--color-text-muted);
     }
+    .typing-hint {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
     .stale-hint {
       display: flex;
       gap: var(--space-2);
@@ -151,6 +159,8 @@ export class ReceiverScreen {
   readonly stale = input(false);
   /** Human-readable age of the last frame, e.g. "20 s ago". */
   readonly lastUpdate = input('a moment ago');
+  /** The sender is typing right now (a `typing` message arrived recently). */
+  readonly typing = input(false);
   /** A frame failed authentication or arrived out of order and was dropped. */
   readonly integrityError = input(false);
 

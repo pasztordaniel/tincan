@@ -51,3 +51,21 @@ Expected: ...  Actual: ...  Result: PASS
 
 ## Not covered / follow-ups
 ```
+
+## End-to-end tests (T12)
+The Playwright suite in `e2e/tests/` runs headless against the production server (`npm run e2e`, or
+`E2E_PORT=3222 npm run test:e2e` against an existing build). `flow.spec.ts` drives the real sender UI and the
+real receiver UI in separate browser contexts; the receiver's WebSocket goes through `page.routeWebSocket` and is
+forwarded to the real relay (`helpers/ws-tap.ts`), which lets a spec corrupt or re-deliver frames.
+No fixed sleeps: every step waits on UI state. Runtime: `flow.spec.ts` about 4 s in parallel; the whole suite is
+well under a minute locally (CI budget: 2 minutes).
+
+| Spec | What it proves |
+|---|---|
+| golden path | Sender creates a thread, receiver opens the link and picks up; 5 consecutive updates (multi-line, accents, CJK, emoji, HTML-looking text, edit, append, delete) arrive exactly (`textContent`, not whitespace-normalised) and in order (a MutationObserver records every rendered text); HTML is shown as text; no warning |
+| second receiver refused | A third context gets "This line is busy"; the first receiver keeps receiving, with no warning |
+| tampered frame | A byte of every sender frame's ciphertext is flipped in flight: the integrity warning shows, the last good text stays; once tampering stops, later frames update again |
+| replayed frame | A genuine, earlier frame is re-delivered byte for byte: warning shown, text not rolled back, later frames still update |
+| key absent | Across both parties: no request URL, header, body or WebSocket frame contains the key or the plaintext, no URL contains `#`, and the server sees `/r/<id>` only |
+
+Reconnect and reload-ends-session specs live in `lifecycle.spec.ts` (T10).

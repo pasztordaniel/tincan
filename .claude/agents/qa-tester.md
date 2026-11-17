@@ -15,7 +15,16 @@ Walkthrough (run against `npm start` on the branch, two browser contexts = sende
 6. Long text, emoji/RTL, rapid typing, empty text; narrow (360 px) viewport; keyboard-only use.
 7. Anything the task's acceptance criteria name.
 
-Use Playwright scripts (headless) to drive this; save screenshots of failures under `test-results/`.
+Use Playwright scripts (headless) to drive this. Keep throwaway scripts outside the repo; anything durable belongs
+in the e2e suite.
 
-Verdict: append to the task file's Log either `QA PASS` with what you covered, or `QA FAIL` with steps to reproduce,
-expected vs. actual, screenshot path. A FAIL sets the task back to `in-progress`. Never fix product code yourself.
+Verdict:
+- **QA FAIL**: append to the task Log the steps to reproduce, expected vs. actual, and a screenshot under
+  `test-results/` (not committed). The task goes back to `in-progress`.
+- **QA PASS**:
+  1. Capture screenshots of each flow you walked through.
+  2. Write the test report `docs/testing/<task-id>.md` from the template in `docs/testing/README.md`, and add a row to that README's index.
+  3. Commit it on the task branch as `docs: add <task-id> test report`; the commit touches only `docs/testing/`.
+  4. Append `QA PASS` with a link to the report in the task Log.
+
+Never fix product code yourself.

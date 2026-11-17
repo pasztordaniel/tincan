@@ -7,7 +7,7 @@
 ## How it was verified
 - [ ] `npm run verify` green locally
 - [ ] Unit tests added/updated for new behaviour
-- [ ] QA walkthrough in a real browser (golden paths) — notes in the task log
+- [ ] QA walkthrough in a real browser (golden paths): report and screenshots in `docs/testing/<task-id>.md`
 - [ ] `/code-review` findings addressed
 
 ## Security

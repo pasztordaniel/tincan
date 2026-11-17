@@ -7,7 +7,7 @@ description: Run every pre-PR gate for a tincan branch and open the pull request
 Stop at the first failing gate, report it, and send the task back to `in-progress`.
 
 1. **Preconditions** — on a task branch (not `main`), working tree clean, task Log contains `QA PASS` newer than the
-   last code commit. Rebase: `git fetch && git rebase origin/main`.
+   last code commit, and `docs/testing/<task-id>.md` exists (link it in the PR body and embed one or two of its screenshots). Rebase: `git fetch && git rebase origin/main`.
 2. **Automated** — `npm run verify`.
 3. **Hygiene scan** on the diff vs. `origin/main`:
    ```bash

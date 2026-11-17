@@ -37,6 +37,13 @@ export interface RelayOptions {
    * connection that never joins the namespace.
    */
   unboundTimeoutMs: number;
+  /**
+   * socket.io heartbeat: the relay pings every `pingIntervalMs` and drops a connection that has not
+   * answered within `pingTimeoutMs`; the client drops the link after both without a ping. This is how
+   * a half-open connection (network lost, socket not closed) is noticed, see `DEFAULT_PING_INTERVAL_MS`.
+   */
+  pingIntervalMs: number;
+  pingTimeoutMs: number;
   /** Clock for the rate limiter. */
   now: () => number;
 }
@@ -46,6 +53,17 @@ export const DEFAULT_MAX_SESSIONS = 10_000;
 
 /** A real client creates, joins or resumes right after connecting; 10 s leaves room for a slow network. */
 export const DEFAULT_UNBOUND_TIMEOUT_MS = 10_000;
+
+/**
+ * socket.io's defaults (25 s + 20 s) let a peer that silently lost the network look connected for up
+ * to 45 s before its grace even starts, so the sender kept seeing "they can hear you". 10 s + 5 s
+ * bounds that to 15 s (peer gone within 15 s + grace). The cost is nil: the sender already sends a
+ * beat every 5 s, so the radio is awake anyway, and a ping/pong is a few bytes. Timer throttling in
+ * background tabs does not matter: the client answers pings from its message handler, not a timer. A
+ * pong slower than 5 s (a very bad link, a frozen tab) costs a reconnect, which the grace absorbs.
+ */
+export const DEFAULT_PING_INTERVAL_MS = 10_000;
+export const DEFAULT_PING_TIMEOUT_MS = 5_000;
 
 export const DEFAULT_RELAY_OPTIONS: Readonly<RelayOptions> = Object.freeze({
   graceMs: RECONNECT_GRACE_MS,
@@ -60,5 +78,7 @@ export const DEFAULT_RELAY_OPTIONS: Readonly<RelayOptions> = Object.freeze({
   // About two seconds of frames at the rate limit, at most ~4 MB of the largest frames per receiver.
   maxReceiverBacklog: 2 * MAX_FRAMES_PER_WINDOW,
   unboundTimeoutMs: DEFAULT_UNBOUND_TIMEOUT_MS,
+  pingIntervalMs: DEFAULT_PING_INTERVAL_MS,
+  pingTimeoutMs: DEFAULT_PING_TIMEOUT_MS,
   now: () => Date.now(),
 });

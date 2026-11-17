@@ -421,6 +421,27 @@ describe('reconnect grace and resume', () => {
     expect(h.relay.sessionCount).toBe(1);
   });
 
+  it('runs a 10 s + 5 s heartbeat by default, so a half-open link is noticed within 15 s', async () => {
+    const h = await relay();
+    expect(h.io.engine.opts).toMatchObject({ pingInterval: 10_000, pingTimeout: 5_000 });
+  });
+
+  it('notices a half-open receiver through the heartbeat and starts its grace', async () => {
+    const h = await relay({ graceMs: 1000, pingIntervalMs: 100, pingTimeoutMs: 100 });
+    const { sender, receiver } = await h.pair();
+    receiver.goSilent();
+    expect(await sender.next('peer')).toEqual({ state: 'reconnecting' });
+  });
+
+  it('notices a half-open sender through the heartbeat and ends with peer_timeout', async () => {
+    const h = await relay({ graceMs: 100, pingIntervalMs: 100, pingTimeoutMs: 100 });
+    const { sender, receiver } = await h.pair();
+    sender.goSilent();
+    expect(await receiver.next('peer')).toEqual({ state: 'reconnecting' });
+    expect(await receiver.next('peer')).toEqual({ state: 'gone' });
+    expect(await receiver.next('session:ended')).toEqual({ reason: 'peer_timeout' });
+  });
+
   it('ends the session with peer_timeout when the grace period expires', async () => {
     const h = await relay({ graceMs: 100 });
     const { sender, receiver, sessionId, senderToken } = await h.pair();

@@ -4,6 +4,9 @@ test('creating a thread never sends the key anywhere', async ({ page }) => {
   const requestUrls: string[] = [];
   const requestBodies: string[] = [];
   const wsFrames: string[] = [];
+  const consoleLines: string[] = [];
+  page.on('console', (msg) => consoleLines.push(msg.text()));
+  page.on('pageerror', (err) => consoleLines.push(String(err)));
   page.on('request', (req) => {
     requestUrls.push(req.url());
     requestBodies.push(req.postData() ?? '');
@@ -30,8 +33,11 @@ test('creating a thread never sends the key anywhere', async ({ page }) => {
   await expect.poll(() => wsFrames.length).toBeGreaterThan(4);
   await page.waitForTimeout(1500);
 
-  // The key is in the link only, never in the sender's own URL or storage.
+  // The key is in the link only, never in the sender's own URL, title, history, storage or console.
   expect(page.url()).not.toContain(key);
+  expect(await page.title()).not.toContain(key);
+  expect(await page.evaluate(() => JSON.stringify(history.state) ?? '')).not.toContain(key);
+  for (const line of consoleLines) expect(line).not.toContain(key);
   const stored = await page.evaluate(() =>
     JSON.stringify([{ ...localStorage }, { ...sessionStorage }]),
   );

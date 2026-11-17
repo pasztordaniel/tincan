@@ -84,4 +84,38 @@ describe('illustrations', () => {
     expect(root.querySelector('.snip')).not.toBeNull();
     expect(root.querySelector('.string')!.getAttribute('d')!.match(/C/g)!.length).toBe(1);
   });
+
+  it.each([IlloSender, IlloReceiver])(
+    '%o carries a decorative full-bleed tail on the open line, dim while waiting',
+    async (component) => {
+      const tail = async (live: boolean) => {
+        const fixture = TestBed.createComponent(component as Type<unknown>);
+        fixture.componentRef.setInput('live', live);
+        await fixture.whenStable();
+        return (fixture.nativeElement as HTMLElement).querySelector('.tail')!;
+      };
+      const live = await tail(true);
+      expect(live.getAttribute('aria-hidden')).toBe('true');
+      expect(live.closest('svg')).toBeNull();
+      expect(live.classList).toContain('tail--live');
+      expect((await tail(false)).classList).toContain('tail--waiting');
+    },
+  );
+
+  it('puts the tail on the right for the sender and on the left for the receiver', async () => {
+    const side = async (component: Type<unknown>) => {
+      const fixture = TestBed.createComponent(component);
+      await fixture.whenStable();
+      return (fixture.nativeElement as HTMLElement).querySelector('.tail')!.classList;
+    };
+    expect(await side(IlloSender)).toContain('tail--right');
+    expect(await side(IlloReceiver)).toContain('tail--left');
+  });
+
+  it('keeps the tail off a sender line that is about to be cut', async () => {
+    const fixture = TestBed.createComponent(IlloSender);
+    fixture.componentRef.setInput('snip', true);
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.tail')).toBeNull();
+  });
 });

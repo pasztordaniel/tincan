@@ -218,6 +218,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Keeps body's overflow-x on body: a visible root would hand it to the viewport, which treats clip as
+     hidden, so anything past the edge would still widen scrollWidth and scroll programmatically. */
+  overflow-x: clip;
 }
 
 body {

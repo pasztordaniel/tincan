@@ -21,7 +21,8 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T14](T14-readme-final.md) | Final README | pm | all | backlog |
 | [T15](T15-signed-frames.md) | Stretch: signed frames | senior-dev | T04 | backlog |
 | [T16](T16-cut-the-line.md) | Cut the line button | dev | T08, T09, T10 | done |
-| [T18](T18-qr-code.md) | Receiver link as a QR code | dev | T08 | pr-open |
+| [T17](T17-string-to-edge.md) | String to the viewport edge | designer | T11, T08, T09 | pr-open |
+| [T18](T18-qr-code.md) | Receiver link as a QR code | dev | T08 | done |
 
 ## Parallel lanes
 ```

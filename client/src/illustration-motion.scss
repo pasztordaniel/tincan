@@ -26,6 +26,22 @@
       illo-sway-soft 1.4s ease-in-out 1.5s 4 alternate;
   }
 
+  /* Full-bleed tail (sender, receiver heroes): the sender's runs on to the viewport edge once the string
+     has drawn up to the art's edge; the receiver's comes in from the viewport edge first, and the string
+     inside the art waits for it. Sways with the string. */
+  .tail--live {
+    scale: 0 1;
+    animation:
+      illo-tail-draw 0.35s ease-out 1.45s forwards,
+      illo-tail-sway 1.4s ease-in-out 1.5s 4 alternate;
+  }
+  .tail--left.tail--live {
+    animation-delay: 0.15s, 1.85s;
+  }
+  .string--live.string--after-tail {
+    animation-delay: 0.5s, 1.85s;
+  }
+
   /* Reconnecting: the slack line sways twice, then hangs still. */
   .anim-sway {
     transform-box: view-box;
@@ -210,6 +226,19 @@
   }
   50% {
     transform: none;
+  }
+}
+
+@keyframes illo-tail-draw {
+  to {
+    scale: 1 1;
+  }
+}
+
+/* The tail's half of illo-sway-soft: 2 viewBox units, in the hero's container units. */
+@keyframes illo-tail-sway {
+  to {
+    transform: translateY(calc(2cqi * 100 / 320));
   }
 }
 

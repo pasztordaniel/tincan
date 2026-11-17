@@ -5,13 +5,17 @@ export const PULSE_GAP_MS = 320;
 
 /**
  * Sends a short bright dash along the live string and gives the string a small twang (a frame sent
- * or received). Called from ngOnChanges, so it runs per event and never loops: when the text stops,
- * the string rests. Skipped entirely under prefers-reduced-motion (see `play`).
+ * or received); the hero's full-bleed tail, if any, twangs along. Called from ngOnChanges, so it runs
+ * per event and never loops: when the text stops, the string rests. Skipped entirely under prefers-reduced-motion (see `play`).
  */
 export class StringPulse {
   private last = 0;
 
-  fire(pulse: SVGPathElement | undefined, string: SVGPathElement | undefined): void {
+  fire(
+    pulse: SVGPathElement | undefined,
+    string: SVGPathElement | undefined,
+    tail?: HTMLElement,
+  ): void {
     const now = Date.now();
     if (now - this.last < PULSE_GAP_MS) return;
     this.last = now;
@@ -31,6 +35,17 @@ export class StringPulse {
         { transform: 'none' },
         { transform: 'translateY(-1.5px)', offset: 0.3 },
         { transform: 'translateY(0.8px)', offset: 0.6 },
+        { transform: 'none' },
+      ],
+      { duration: 520, easing: 'ease-out' },
+    );
+    // The full-bleed tail twangs with it, by the same 1.5 viewBox units (100cqi = the art's 320).
+    play(
+      tail,
+      [
+        { transform: 'none' },
+        { transform: 'translateY(calc(-1.5cqi * 100 / 320))', offset: 0.3 },
+        { transform: 'translateY(calc(0.8cqi * 100 / 320))', offset: 0.6 },
         { transform: 'none' },
       ],
       { duration: 520, easing: 'ease-out' },

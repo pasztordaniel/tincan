@@ -15,6 +15,7 @@ Every task that passes QA leaves a report here, so anyone can see what was teste
 | T09 | [T09](T09.md) | PASS |
 | T10 | [T10](T10.md) | PASS |
 | T16 | [T16](T16.md) | PASS (Escape race found and fixed) |
+| T17 | [T17](T17.md) | PASS (D1 sideways scroll and D2 seam found and fixed) |
 | T18 | [T18](T18.md) | PASS |
 <!-- qa-tester appends one row per passed task, newest last -->
 

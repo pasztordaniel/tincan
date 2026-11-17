@@ -17,3 +17,4 @@ Express serves the built client with: strict CSP (`default-src 'self'`, `connect
 <!-- claim, review, security and QA notes go here, newest last -->
 - senior-dev (from T01 review): disable `inlineCritical` in the Angular build; its beasties output adds an `onload`
   handler that violates `script-src 'self'`. Plan the `style-src` policy for Angular component styles.
+- T01 review: the origin check compares host:port only and ignores the scheme (no impact today: no credentials, ciphertext only). Document that a reverse proxy must preserve `Host` (e.g. nginx `proxy_set_header Host $host`), or every browser handshake gets 403.

@@ -24,10 +24,12 @@ export interface TincanServer {
 /**
  * Decides whether a socket.io handshake may proceed, based on its `Origin` and `Host` headers.
  *
- * A missing Origin is allowed: browsers always send Origin on cross-origin requests and on every
- * WebSocket handshake, but may omit it on same-origin GETs (socket.io's first polling request).
- * So a cross-site browser page can never produce a request without Origin, and non-browser
- * clients can forge any header anyway; the Origin check defends against cross-site pages only.
+ * A missing Origin is allowed: browsers may omit it on same-origin GETs (socket.io's first polling
+ * request). Cross-site pages can also send Origin-less no-cors GETs (e.g. an <img> pointing at the
+ * polling URL), which open an engine.io handshake, but they cannot read the returned sid, so they
+ * can never complete the socket.io connect. Therefore a completed handshake is NOT proof of same
+ * origin; session authorisation (T05) relies on tokens. Every WebSocket handshake carries Origin.
+ * Non-browser clients can forge any header; this check defends against cross-site pages only.
  */
 export function isAllowedOrigin(origin: string | undefined, host: string | undefined): boolean {
   if (origin === undefined) return true;

@@ -8,8 +8,8 @@ describe('DesignPage', () => {
     const fixture = TestBed.createComponent(DesignPage);
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelectorAll('app-sender-screen').length).toBe(5);
-    expect(root.querySelectorAll('app-receiver-screen').length).toBe(6);
+    expect(root.querySelectorAll('app-sender-screen').length).toBe(6);
+    expect(root.querySelectorAll('app-receiver-screen').length).toBe(7);
     expect(root.querySelector('app-line-busy-screen')).not.toBeNull();
     expect(root.querySelector('app-line-cut-screen')).not.toBeNull();
     expect(root.textContent).toContain('Pick up');

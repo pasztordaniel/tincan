@@ -351,6 +351,7 @@ describe('ReceiverSession', () => {
       await openLine();
       await send({ t: 'text', text: 'bye', ts: now });
       relay.ended.set('peer_left');
+      expect(session.cutByYou()).toBe(false);
       expect(session.text()).toBe('bye');
     });
   });
@@ -380,6 +381,47 @@ describe('ReceiverSession', () => {
       session.ngOnDestroy();
       expect(relay.leave).toHaveBeenCalledOnce();
       expect(relay.frames$.observed).toBe(false);
+    });
+  });
+
+  describe('cut the line', () => {
+    it('leaves once, drops the key and listeners, keeps the last text readable', async () => {
+      await openLine();
+      await send({ t: 'text', text: 'last words', ts: now });
+      session.cutLine();
+      expect(relay.leave).toHaveBeenCalledOnce();
+      expect(relay.frames$.observed).toBe(false);
+      expect(session.text()).toBe('last words');
+      expect(session.stage()).toBe('live');
+      // The relay's own state after `leave()`.
+      relay.ended.set('left');
+      expect(session.lineState()).toBe('ended');
+      expect(session.endReason()).toBe('left');
+      expect(session.cutByYou()).toBe(true);
+      // The key is gone: a frame the transport still delivered is not decrypted.
+      await send({ t: 'text', text: 'late', ts: now });
+      expect(session.text()).toBe('last words');
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('is idempotent and a later destroy or pagehide does not leave again', async () => {
+      await openLine();
+      session.cutLine();
+      session.cutLine();
+      session.ngOnDestroy();
+      pageHide();
+      expect(relay.leave).toHaveBeenCalledOnce();
+    });
+
+    it('does nothing at the gate or after the line already ended', async () => {
+      await visit(sessionId);
+      session.cutLine();
+      expect(relay.leave).not.toHaveBeenCalled();
+      await session.open();
+      relay.status.set('ended');
+      session.cutLine();
+      expect(relay.leave).not.toHaveBeenCalled();
     });
   });
 

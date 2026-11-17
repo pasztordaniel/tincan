@@ -34,6 +34,7 @@ async function mount(id: string, hash: string | null) {
     ],
   });
   const fixture = TestBed.createComponent(ReceiverPage);
+  document.body.appendChild(fixture.nativeElement as HTMLElement);
   await fixture.whenStable();
   return { fixture, relay, root: fixture.nativeElement as HTMLElement };
 }
@@ -45,7 +46,10 @@ async function newKeyString(): Promise<string> {
 }
 
 describe('ReceiverPage', () => {
-  afterEach(() => history.replaceState(null, '', '/'));
+  afterEach(() => {
+    history.replaceState(null, '', '/');
+    document.body.replaceChildren();
+  });
 
   it('shows the Open step first, joins only on click, then shows the line', async () => {
     const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
@@ -100,5 +104,37 @@ describe('ReceiverPage', () => {
     root.querySelector('button')!.click();
     await fixture.whenStable();
     expect(root.textContent).toContain('Nothing on this line');
+  });
+
+  it('cuts the line on purpose: asks first, leaves, wipes the key, keeps the text, says so', async () => {
+    const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
+    root.querySelector('button')!.click();
+    await fixture.whenStable();
+    const named = (name: string) =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!;
+    expect(root.querySelector('app-cut-line')).not.toBeNull();
+    named('Cut the line').click();
+    await fixture.whenStable();
+    named('Cut it').click();
+    expect(relay.leave).toHaveBeenCalledOnce();
+    // The real relay sets these in leave(); the fake does it by hand.
+    relay.status.set('ended');
+    relay.ended.set('left');
+    await fixture.whenStable();
+    expect(root.textContent).toContain('You cut the line');
+    expect(root.querySelector('app-cut-line')).toBeNull();
+    expect(document.activeElement).toBe(root.querySelector('h2'));
+    expect(relay.frames$.observed).toBe(false);
+  });
+
+  it('shows "You cut the line" on the plain ended screen when nothing was received', async () => {
+    const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
+    root.querySelector('button')!.click();
+    await fixture.whenStable();
+    relay.status.set('ended');
+    relay.ended.set('left');
+    await fixture.whenStable();
+    expect(root.querySelector('h2')?.textContent).toBe('You cut the line');
+    expect(document.activeElement).toBe(root.querySelector('h2'));
   });
 });

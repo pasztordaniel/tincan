@@ -65,6 +65,10 @@ These screens or states don't appear in the original sketch, but the protocol ne
    readable on demand but never read out every second.
 6. **Copy feedback.** After copying the link, a short "Copied" confirmation and a reminder: "Anyone with this
    link can read along. Send it over a channel you trust."
+7. **Cut the line.** While the line is open (sender: also while waiting; receiver: after Pick up) a quiet ghost
+   button ends it on purpose. A tap only opens an inline question, "Cut the line?" with **Cut it** and **Keep
+   talking** (focus lands on Keep talking; Escape backs out), never a browser dialog. Afterwards the side that cut
+   shows the usual ended state titled "You cut the line", text still readable.
 
 ## Motion
 Motion is CSS, SVG and the Web Animations API only: no animation library, no inline `style` attributes (the

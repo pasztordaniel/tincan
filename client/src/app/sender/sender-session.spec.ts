@@ -373,6 +373,37 @@ describe('SenderSession', () => {
       expect(session.link()).toBeNull();
     });
 
+    it('cutLine() leaves once, ends the line, wipes the link and timers but keeps the text', async () => {
+      await started();
+      session.edit('last words');
+      await advance(TEXT_DEBOUNCE_MS);
+      session.cutLine();
+      expect(session.state()).toBe('ended');
+      expect(session.cutByYou()).toBe(true);
+      expect(relay.leaves).toBe(1);
+      expect(session.link()).toBeNull();
+      expect(session.active()).toBe(false);
+      expect(session.text()).toBe('last words');
+      const before = sealer.messages.length;
+      session.edit('too late');
+      session.cutLine();
+      await advance(BEAT_INTERVAL_MS * 3);
+      expect(sealer.messages.length).toBe(before);
+      expect(session.text()).toBe('last words');
+      expect(relay.leaves).toBe(1);
+    });
+
+    it('cutLine() while waiting for the receiver works, and the idle cut is not "by you"', async () => {
+      await started();
+      session.cutLine();
+      expect(session.state()).toBe('ended');
+      await started();
+      expect(session.cutByYou()).toBe(false);
+      await advance(IDLE_CUT_MS);
+      expect(session.state()).toBe('ended');
+      expect(session.cutByYou()).toBe(false);
+    });
+
     it('end() leaves the relay once and clears the text', async () => {
       await started();
       session.edit('secret');

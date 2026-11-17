@@ -3,6 +3,7 @@ import { SenderScreen } from './sender-screen';
 
 async function render(state: string, text = '') {
   const fixture = TestBed.createComponent(SenderScreen);
+  document.body.appendChild(fixture.nativeElement as HTMLElement);
   fixture.componentRef.setInput('state', state);
   fixture.componentRef.setInput('text', text);
   await fixture.whenStable();
@@ -10,6 +11,8 @@ async function render(state: string, text = '') {
 }
 
 describe('SenderScreen', () => {
+  afterEach(() => document.body.replaceChildren());
+
   it('shows an editable writing area with the ready-to-type caret while waiting', async () => {
     const { root } = await render('waiting');
     const area = root.querySelector('textarea')!;
@@ -55,5 +58,62 @@ describe('SenderScreen', () => {
     )!;
     button.click();
     expect(kept).toBe(1);
+  });
+
+  describe('cut the line', () => {
+    const cutButton = (root: HTMLElement) =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Cut the line');
+
+    it.each(['waiting', 'connected', 'idle', 'reconnecting'])(
+      'is offered while %s',
+      async (state) => {
+        const { root } = await render(state);
+        expect(cutButton(root)).toBeDefined();
+      },
+    );
+
+    it('is gone once the line has ended', async () => {
+      const { root } = await render('ended', 'x');
+      expect(root.querySelector('app-cut-line')).toBeNull();
+    });
+
+    it('asks first, emits only on "Cut it" and not on "Keep talking"', async () => {
+      const { fixture, root } = await render('connected');
+      let cut = 0;
+      fixture.componentInstance.cutLine.subscribe(() => cut++);
+      cutButton(root)!.click();
+      await fixture.whenStable();
+      expect(cut).toBe(0);
+      const find = (name: string) =>
+        [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!;
+      find('Keep talking').click();
+      await fixture.whenStable();
+      expect(cut).toBe(0);
+      cutButton(root)!.click();
+      await fixture.whenStable();
+      find('Cut it').click();
+      expect(cut).toBe(1);
+    });
+
+    it('moves focus to the ended banner after the user cuts, but not for a screen rendered as ended', async () => {
+      const { fixture, root } = await render('ended', 'x');
+      fixture.componentRef.setInput('cutByYou', true);
+      await fixture.whenStable();
+      expect(document.activeElement).not.toBe(root.querySelector('app-warning-banner'));
+      const live = await render('connected', 'x');
+      live.fixture.componentRef.setInput('state', 'ended');
+      live.fixture.componentRef.setInput('cutByYou', true);
+      await live.fixture.whenStable();
+      expect(document.activeElement).toBe(live.root.querySelector('app-warning-banner'));
+    });
+
+    it('says who cut the line once ended', async () => {
+      const { fixture, root } = await render('ended', 'x');
+      expect(root.textContent).toContain('The line is cut');
+      fixture.componentRef.setInput('cutByYou', true);
+      await fixture.whenStable();
+      expect(root.textContent).toContain('You cut the line');
+      expect(root.querySelector('textarea')!.readOnly).toBe(true);
+    });
   });
 });

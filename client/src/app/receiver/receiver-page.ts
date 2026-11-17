@@ -9,8 +9,8 @@ import type { RelayEndReason } from '../relay/relay.service';
 import { ReceiverSession } from './receiver-session';
 
 const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
-  peer_left: 'The sender hung up. Nothing more will be delivered on this line.',
-  left: 'You hung up. Nothing more will be delivered on this line.',
+  peer_left: 'The sender cut the line. Nothing more will be delivered on this line.',
+  left: 'You cut the line. Nothing more will be delivered on this line.',
   peer_timeout: 'The sender lost the connection and did not come back in time.',
   grace_expired: 'The connection to the line was lost and could not be restored.',
   session_lost: 'The line could not be picked up again. It may have ended.',
@@ -38,7 +38,11 @@ const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
         }
         @case ('live') {
           @if (session.lineState() === 'ended' && !session.text()) {
-            <app-line-cut-screen [message]="endedMessage()" />
+            <app-line-cut-screen
+              [takeFocus]="session.cutByYou()"
+              [heading]="session.cutByYou() ? 'You cut the line' : 'Line cut'"
+              [message]="endedMessage()"
+            />
           } @else {
             <app-receiver-screen
               phase="live"
@@ -48,6 +52,8 @@ const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
               [stale]="session.stale()"
               [lastUpdate]="session.lastUpdate()"
               [integrityError]="session.integrityError()"
+              [cutByYou]="session.cutByYou()"
+              (cutLine)="session.cutLine()"
             />
           }
         }

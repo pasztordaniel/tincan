@@ -1,7 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  model,
+  output,
+  viewChild,
+} from '@angular/core';
 import { MAX_TEXT_LENGTH } from '@tincan/shared';
 import { IlloLineCut, IlloLineSlack, IlloSender } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
+import { CutLine } from '../ui/cut-line/cut-line';
 import { StatusPill } from '../ui/status-pill/status-pill';
 import type { LineState } from '../ui/status-pill/status-pill.model';
 import { WarningBanner } from '../ui/warning-banner/warning-banner';
@@ -14,7 +28,15 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-sender-screen',
-  imports: [IlloSender, IlloLineSlack, IlloLineCut, StatusPill, WarningBanner, ButtonDirective],
+  imports: [
+    IlloSender,
+    IlloLineSlack,
+    IlloLineCut,
+    StatusPill,
+    WarningBanner,
+    ButtonDirective,
+    CutLine,
+  ],
   template: `
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
       @switch (state()) {
@@ -69,7 +91,13 @@ let nextId = 0;
       </div>
 
       @if (ended()) {
-        <app-warning-banner class="screen__full" tone="info" heading="The line is cut">
+        <app-warning-banner
+          #endedBanner
+          tabindex="-1"
+          class="screen__full"
+          tone="info"
+          [heading]="cutByYou() ? 'You cut the line' : 'The line is cut'"
+        >
           <span [id]="uid + '-ended'">Nothing you type now will be sent.</span>
         </app-warning-banner>
       } @else if (state() === 'idle') {
@@ -91,6 +119,9 @@ let nextId = 0;
         <p [id]="uid + '-hint'" class="hint">
           Every keystroke travels live, end-to-end encrypted. The server never sees it.
         </p>
+      }
+      @if (!ended()) {
+        <app-cut-line class="screen__full" (confirmed)="cutLine.emit()" />
       }
     </section>
   `,
@@ -161,10 +192,35 @@ export class SenderScreen {
   readonly idleSecondsLeft = input(60);
   /** The sender asked to keep an idle line open (T08 resets the idle timer). */
   readonly keepOpen = output<void>();
+  /** The sender confirmed "Cut the line". */
+  readonly cutLine = output<void>();
+  /** The line ended because this side cut it on purpose (changes the ended message). */
+  readonly cutByYou = input(false);
   /** The text being written; two-way bindable so the feature layer can observe edits. */
   readonly text = model('');
 
   protected readonly ended = computed(() => this.state() === 'ended');
+
+  private readonly endedBanner = viewChild('endedBanner', { read: ElementRef });
+  private sawOpenLine = false;
+
+  constructor() {
+    const injector = inject(Injector);
+    // Focus follows the user's own cut: the button they pressed is gone. Only after a live -> ended
+    // change, so a screen that is merely rendered as ended (see /design) never steals focus.
+    effect(() => {
+      const ended = this.ended();
+      if (!ended) this.sawOpenLine = true;
+      else if (this.cutByYou() && this.sawOpenLine) {
+        this.sawOpenLine = false;
+        afterNextRender(
+          () => (this.endedBanner()?.nativeElement as HTMLElement | undefined)?.focus(),
+          { injector },
+        );
+      }
+    });
+  }
+
   protected readonly countdown = computed(() => {
     const total = Math.max(0, Math.ceil(this.idleSecondsLeft()));
     return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;

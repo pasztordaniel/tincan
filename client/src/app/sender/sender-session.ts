@@ -43,6 +43,8 @@ export class SenderSession implements OnDestroy {
   private readonly _idleSecondsLeft = signal(Math.ceil((IDLE_CUT_MS - IDLE_WARNING_MS) / 1000));
   private readonly _idle = signal(false);
   private readonly _cut = signal(false);
+  /** The cut was the user's "Cut the line", not the idle clock. */
+  private readonly _cutByYou = signal(false);
   /** True from a successful `start()` until `end()` / the relay ending the session. */
   private readonly _active = signal(false);
 
@@ -52,6 +54,7 @@ export class SenderSession implements OnDestroy {
   readonly starting = this._starting.asReadonly();
   readonly active = this._active.asReadonly();
   readonly idleSecondsLeft = this._idleSecondsLeft.asReadonly();
+  readonly cutByYou = this._cutByYou.asReadonly();
 
   readonly state = computed<LineState>(() => {
     if (this._cut() || this.relay.status() === 'ended') return 'ended';
@@ -86,6 +89,7 @@ export class SenderSession implements OnDestroy {
     this.end();
     const epoch = this.epoch;
     this._cut.set(false);
+    this._cutByYou.set(false);
     this._starting.set(true);
     try {
       const generated = await this.crypto.generateKey();
@@ -145,6 +149,17 @@ export class SenderSession implements OnDestroy {
     this.stop();
     if (wasActive) this.relay.leave();
     this._text.set('');
+  }
+
+  /**
+   * "Cut the line": ends the session on purpose. Same wipe as the idle cut (key, timers, link) and an
+   * explicit leave: the receiver sees `peer_left` at once while connected, and only after the 20 s grace if this
+   * side is reconnecting or offline (the disconnect cannot be delivered then); the text stays on screen, read-only.
+   */
+  cutLine(): void {
+    if (!this._active() || this.state() === 'ended') return;
+    this._cutByYou.set(true);
+    this.cut();
   }
 
   ngOnDestroy(): void {

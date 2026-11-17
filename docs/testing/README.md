@@ -14,6 +14,7 @@ Every task that passes QA leaves a report here, so anyone can see what was teste
 | T08 | [T08](T08.md) | PASS |
 | T09 | [T09](T09.md) | PASS |
 | T10 | [T10](T10.md) | PASS |
+| T16 | [T16](T16.md) | PASS (one e2e spec flaky, see defect 1) |
 <!-- qa-tester appends one row per passed task, newest last -->
 
 ## Conventions

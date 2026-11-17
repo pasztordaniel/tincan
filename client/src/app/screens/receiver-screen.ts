@@ -1,6 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { IlloLineCut, IlloLineFrayed, IlloLineSlack, IlloReceiver } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
+import { CutLine } from '../ui/cut-line/cut-line';
 import { StatusPill } from '../ui/status-pill/status-pill';
 import type { LineState } from '../ui/status-pill/status-pill.model';
 import { WarningBanner } from '../ui/warning-banner/warning-banner';
@@ -24,6 +37,7 @@ let nextId = 0;
     IlloLineFrayed,
     StatusPill,
     WarningBanner,
+    CutLine,
   ],
   template: `
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
@@ -94,9 +108,17 @@ let nextId = 0;
         }
 
         @if (state() === 'ended') {
-          <app-warning-banner class="screen__full" tone="info" heading="The line is cut">
+          <app-warning-banner
+            #endedBanner
+            tabindex="-1"
+            class="screen__full"
+            tone="info"
+            [heading]="cutByYou() ? 'You cut the line' : 'The line is cut'"
+          >
             Nothing more will arrive. The text above is the last thing they sent.
           </app-warning-banner>
+        } @else {
+          <app-cut-line class="screen__full" (confirmed)="cutLine.emit()" />
         }
       }
     </section>
@@ -164,7 +186,32 @@ export class ReceiverScreen {
   /** A frame failed authentication or arrived out of order and was dropped. */
   readonly integrityError = input(false);
 
+  /** This side cut the line on purpose (changes the ended message). */
+  readonly cutByYou = input(false);
+
   readonly pickUp = output();
+  /** The receiver confirmed "Cut the line". */
+  readonly cutLine = output<void>();
+
+  private readonly endedBanner = viewChild('endedBanner', { read: ElementRef });
+  private sawOpenLine = false;
+
+  constructor() {
+    const injector = inject(Injector);
+    // Focus follows the user's own cut: the button they pressed is gone. Only after a live -> ended
+    // change, so a screen that is merely rendered as ended (see /design) never steals focus.
+    effect(() => {
+      const ended = this.state() === 'ended';
+      if (!ended) this.sawOpenLine = true;
+      else if (this.cutByYou() && this.sawOpenLine) {
+        this.sawOpenLine = false;
+        afterNextRender(
+          () => (this.endedBanner()?.nativeElement as HTMLElement | undefined)?.focus(),
+          { injector },
+        );
+      }
+    });
+  }
 
   protected readonly illustration = computed(() => {
     if (this.integrityError()) return 'frayed';

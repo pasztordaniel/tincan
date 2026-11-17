@@ -47,3 +47,4 @@ plus heartbeat-driven stale indicator.
   - Checked, no change: `pagehide` during create (epoch cancels, the late session is left) and during join (the
     teardown cancels the open; an acked join is left), double `pagehide` and leave after the end are no-ops, nothing
     reacts to `visibilitychange`; the e2e helpers use no fixed sleeps and route only the test pages' sockets.
+- qa-tester: QA PASS, see [T10 test report](../testing/T10.md). Reload, close and navigate-away end the peer in under 50 ms; drops resume and typed text arrives; half-open peers noticed in about 14 s, ended after about 34 s; bfcache could not be triggered (unit-tested only); minor fragment-in-history race noted in the report.

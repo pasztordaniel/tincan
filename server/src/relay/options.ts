@@ -1,0 +1,46 @@
+import {
+  FRAME_RATE_WINDOW_MS,
+  MAX_FRAMES_PER_WINDOW,
+  MAX_SESSION_LIFETIME_MS,
+  RECONNECT_GRACE_MS,
+  SESSION_IDLE_TTL_MS,
+} from '@tincan/shared';
+
+/**
+ * Relay timing and capacity. Production uses the defaults (the shared protocol constants); tests inject
+ * short durations so grace, TTL and lifetime behaviour runs against a real server in milliseconds.
+ */
+export interface RelayOptions {
+  /** How long a dropped sender or receiver may take to resume. */
+  graceMs: number;
+  /** A session with no frame and no join/resume for this long ends with `idle`. */
+  idleTtlMs: number;
+  /** A session ends with `idle` this long after `session:create`, whatever its traffic. */
+  lifetimeMs: number;
+  /** Most sessions held at once; `session:create` answers `busy` beyond it. */
+  maxSessions: number;
+  /** Rate limit window, in ms. */
+  rateWindowMs: number;
+  /** Events a socket may send per window; further `frame`s are answered `rate_limited`, others dropped. */
+  maxEventsPerWindow: number;
+  /** Events per window at which the socket counts as flooding and is disconnected. */
+  floodEventsPerWindow: number;
+  /** Clock for the rate limiter. */
+  now: () => number;
+}
+
+/** Enough for a small deployment; each session costs a few hundred bytes plus a few timers. */
+export const DEFAULT_MAX_SESSIONS = 10_000;
+
+export const DEFAULT_RELAY_OPTIONS: Readonly<RelayOptions> = Object.freeze({
+  graceMs: RECONNECT_GRACE_MS,
+  idleTtlMs: SESSION_IDLE_TTL_MS,
+  lifetimeMs: MAX_SESSION_LIFETIME_MS,
+  maxSessions: DEFAULT_MAX_SESSIONS,
+  rateWindowMs: FRAME_RATE_WINDOW_MS,
+  maxEventsPerWindow: MAX_FRAMES_PER_WINDOW,
+  // An honest sender sends a few frames per second; three times the limit within one window is never
+  // a slow client catching up, so the socket is cut instead of being answered event by event.
+  floodEventsPerWindow: 3 * MAX_FRAMES_PER_WINDOW,
+  now: () => Date.now(),
+});

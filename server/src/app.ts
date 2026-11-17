@@ -8,18 +8,23 @@ import {
 import { extname, join, posix } from 'node:path';
 import express, { type ErrorRequestHandler, type Express } from 'express';
 import { Server as SocketServer } from 'socket.io';
-import { APP_NAME } from '@tincan/shared';
+import { APP_NAME, MAX_MESSAGE_BYTES } from '@tincan/shared';
 import { BASE_HEADERS, securityHeaders, sendIndex, setStaticHeaders } from './headers.js';
+import type { RelayOptions } from './relay/options.js';
+import { attachRelay, type Relay, type RelayServer } from './relay/relay.js';
 
 export interface AppOptions {
   /** Directory holding the built Angular app (`index.html` + assets). Optional so the API runs without a client build. */
   clientDir?: string;
+  /** Relay timing overrides (tests only); production uses the protocol constants. */
+  relay?: Partial<RelayOptions>;
 }
 
 export interface TincanServer {
   app: Express;
   httpServer: HttpServer;
-  io: SocketServer;
+  io: RelayServer;
+  relay: Relay;
 }
 
 /**
@@ -128,7 +133,9 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
   app.use(errorHandler);
 
   const httpServer = createServer(app);
-  const io = new SocketServer(httpServer, {
+  const io: RelayServer = new SocketServer(httpServer, {
+    // Also the WebSocket maxPayload: larger messages close the connection before they are parsed.
+    maxHttpBufferSize: MAX_MESSAGE_BYTES,
     // The client bundles socket.io-client itself; no need to serve /socket.io/socket.io.js.
     serveClient: false,
     // No CORS headers are set, but WebSocket handshakes are not covered by CORS at all, so
@@ -147,9 +154,7 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
     for (const [name, value] of Object.entries(BASE_HEADERS)) res.setHeader(name, value);
   });
 
-  io.on('connection', () => {
-    // Placeholder: session handlers arrive with T05. Intentionally logs nothing.
-  });
+  const relay = attachRelay(io, options.relay);
 
-  return { app, httpServer, io };
+  return { app, httpServer, io, relay };
 }

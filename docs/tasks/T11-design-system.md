@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| designer | T01 | backlog | — |
+| designer | T01 | in-progress | `feat/T11-design-system` |
 
 ## Goal
 Visual language from the maintainer's logo and UI ideas: tokens (color, type, spacing) as CSS custom properties,
@@ -16,3 +16,4 @@ No remote fonts or assets (CSP). Screens, states and illustrations: [`docs/desig
 
 ## Log
 <!-- claim, review, security and QA notes go here, newest last -->
+- designer: claimed (stacked on the unmerged T01 scaffold, by request of the orchestrator)

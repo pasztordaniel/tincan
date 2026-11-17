@@ -150,6 +150,32 @@ test.describe('home link', () => {
     }
   });
 
+  test('a hash change while the question is up withdraws it; the line stays and the fragment is dropped', async ({
+    browser,
+    baseURL,
+  }) => {
+    const { sender, receiver, close } = await pair(browser, baseURL!);
+    try {
+      await home(sender).click();
+      await expect(question(sender)).toBeVisible();
+      await sender.evaluate(() => (window.location.hash = 'x'));
+      await expect(question(sender)).toHaveCount(0);
+      await expect(home(sender)).toBeFocused();
+      await expect(sender).toHaveURL(/\/s$/);
+      await sender.getByLabel('Text to send').fill('after the hash');
+      await expect(receiver.getByText('after the hash')).toBeVisible();
+      await expect(receiver.getByText('The line is cut')).toHaveCount(0);
+
+      // The superseded navigation is gone: asking again and leaving still works, once.
+      await home(sender).click();
+      await sender.getByRole('button', { name: 'Leave' }).click();
+      await expect(sender).toHaveURL(/\/$/);
+      await expect(receiver.getByText('The line is cut')).toBeVisible(FAST);
+    } finally {
+      await close();
+    }
+  });
+
   test('after the line has ended, home needs no confirm', async ({ browser, baseURL }) => {
     const { sender, receiver, close } = await pair(browser, baseURL!);
     try {

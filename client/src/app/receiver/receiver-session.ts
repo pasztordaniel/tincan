@@ -153,6 +153,16 @@ export class ReceiverSession implements OnDestroy {
     else this._openFailure.set(result.error);
   }
 
+  /**
+   * "Cut the line": the receiver hangs up on purpose. The key, the listeners and the timers go through
+   * the same `cleanup()` as `pagehide` and the relay is told (`peer_left` for the sender). Unlike
+   * `pagehide` the page stays, and like every other ended state (T09) it keeps the last text readable.
+   */
+  cutLine(): void {
+    if (this._stage() !== 'live' || this.destroyed || this.relay.status() === 'ended') return;
+    this.cleanup();
+  }
+
   ngOnDestroy(): void {
     this.offHide();
     this.cleanup();

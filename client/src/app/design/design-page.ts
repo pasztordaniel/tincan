@@ -106,6 +106,10 @@ const SAMPLE =
               <app-sender-screen [state]="s.state" [text]="s.text" />
             </figure>
           }
+          <figure class="frame card">
+            <figcaption>Ended, you cut the line (read-only)</figcaption>
+            <app-sender-screen state="ended" [text]="sample" [cutByYou]="true" />
+          </figure>
         </div>
       </section>
 
@@ -149,6 +153,10 @@ const SAMPLE =
           <figure class="frame card">
             <figcaption>Line cut</figcaption>
             <app-receiver-screen phase="live" state="ended" [text]="sample" />
+          </figure>
+          <figure class="frame card">
+            <figcaption>Line cut by you</figcaption>
+            <app-receiver-screen phase="live" state="ended" [text]="sample" [cutByYou]="true" />
           </figure>
         </div>
       </section>

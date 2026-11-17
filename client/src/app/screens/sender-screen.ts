@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, model, output } fr
 import { MAX_TEXT_LENGTH } from '@tincan/shared';
 import { IlloLineCut, IlloLineSlack, IlloSender } from '../illustrations';
 import { ButtonDirective } from '../ui/button/button';
+import { CutLine } from '../ui/cut-line/cut-line';
 import { StatusPill } from '../ui/status-pill/status-pill';
 import type { LineState } from '../ui/status-pill/status-pill.model';
 import { WarningBanner } from '../ui/warning-banner/warning-banner';
@@ -14,7 +15,15 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-sender-screen',
-  imports: [IlloSender, IlloLineSlack, IlloLineCut, StatusPill, WarningBanner, ButtonDirective],
+  imports: [
+    IlloSender,
+    IlloLineSlack,
+    IlloLineCut,
+    StatusPill,
+    WarningBanner,
+    ButtonDirective,
+    CutLine,
+  ],
   template: `
     <section class="screen" [attr.aria-labelledby]="uid + '-heading'">
       @switch (state()) {
@@ -69,7 +78,11 @@ let nextId = 0;
       </div>
 
       @if (ended()) {
-        <app-warning-banner class="screen__full" tone="info" heading="The line is cut">
+        <app-warning-banner
+          class="screen__full"
+          tone="info"
+          [heading]="cutByYou() ? 'You cut the line' : 'The line is cut'"
+        >
           <span [id]="uid + '-ended'">Nothing you type now will be sent.</span>
         </app-warning-banner>
       } @else if (state() === 'idle') {
@@ -91,6 +104,9 @@ let nextId = 0;
         <p [id]="uid + '-hint'" class="hint">
           Every keystroke travels live, end-to-end encrypted. The server never sees it.
         </p>
+      }
+      @if (!ended()) {
+        <app-cut-line class="screen__full" (confirmed)="cutLine.emit()" />
       }
     </section>
   `,
@@ -161,6 +177,10 @@ export class SenderScreen {
   readonly idleSecondsLeft = input(60);
   /** The sender asked to keep an idle line open (T08 resets the idle timer). */
   readonly keepOpen = output<void>();
+  /** The sender confirmed "Cut the line". */
+  readonly cutLine = output<void>();
+  /** The line ended because this side cut it on purpose (changes the ended message). */
+  readonly cutByYou = input(false);
   /** The text being written; two-way bindable so the feature layer can observe edits. */
   readonly text = model('');
 

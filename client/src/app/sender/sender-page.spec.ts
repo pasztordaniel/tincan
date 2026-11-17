@@ -13,6 +13,8 @@ function fakeSession(state: string, link: string | null = 'http://x/r/id#key') {
     idleSecondsLeft: signal(60),
     edit: vi.fn(),
     keepOpen: vi.fn(),
+    cutByYou: signal(false),
+    cutLine: vi.fn(),
     end: vi.fn(),
   };
 }
@@ -57,5 +59,28 @@ describe('SenderPage', () => {
       hasSenderSession(null as never, null as never),
     ) as UrlTree;
     expect(TestBed.inject(Router).serializeUrl(result)).toBe('/');
+  });
+
+  it('asks before cutting, then ends through the session and shows who cut', async () => {
+    const session = fakeSession('connected');
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: SenderSession, useValue: session }],
+    });
+    const fixture = TestBed.createComponent(SenderPage);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const named = (name: string) =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!;
+    named('Cut the line').click();
+    await fixture.whenStable();
+    expect(session.cutLine).not.toHaveBeenCalled();
+    named('Cut it').click();
+    expect(session.cutLine).toHaveBeenCalledOnce();
+    session.state.set('ended');
+    session.cutByYou.set(true);
+    await fixture.whenStable();
+    expect(root.textContent).toContain('You cut the line');
+    expect(root.querySelector('app-cut-line')).toBeNull();
+    expect(root.querySelector('textarea')!.readOnly).toBe(true);
   });
 });

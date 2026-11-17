@@ -10,7 +10,7 @@ import { ReceiverSession } from './receiver-session';
 
 const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
   peer_left: 'The sender hung up. Nothing more will be delivered on this line.',
-  left: 'You hung up. Nothing more will be delivered on this line.',
+  left: 'You cut the line. Nothing more will be delivered on this line.',
   peer_timeout: 'The sender lost the connection and did not come back in time.',
   grace_expired: 'The connection to the line was lost and could not be restored.',
   session_lost: 'The line could not be picked up again. It may have ended.',
@@ -38,7 +38,10 @@ const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
         }
         @case ('live') {
           @if (session.lineState() === 'ended' && !session.text()) {
-            <app-line-cut-screen [message]="endedMessage()" />
+            <app-line-cut-screen
+              [heading]="cutByYou() ? 'You cut the line' : 'Line cut'"
+              [message]="endedMessage()"
+            />
           } @else {
             <app-receiver-screen
               phase="live"
@@ -48,6 +51,8 @@ const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
               [stale]="session.stale()"
               [lastUpdate]="session.lastUpdate()"
               [integrityError]="session.integrityError()"
+              [cutByYou]="cutByYou()"
+              (cutLine)="session.cutLine()"
             />
           }
         }
@@ -89,6 +94,8 @@ const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
 export class ReceiverPage {
   protected readonly session = inject(ReceiverSession);
   protected readonly appName = APP_NAME;
+
+  protected readonly cutByYou = computed(() => this.session.endReason() === 'left');
 
   protected readonly endedMessage = computed(
     () => ENDED_COPY[this.session.endReason() ?? 'peer_left'],

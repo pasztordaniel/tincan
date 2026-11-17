@@ -60,4 +60,49 @@ describe('ReceiverScreen', () => {
     await fixture.whenStable();
     expect(root.textContent).not.toContain('They are typing...');
   });
+
+  describe('cut the line', () => {
+    const named = (root: HTMLElement, name: string) =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name);
+
+    it('is not offered at the gate', async () => {
+      const { root } = await render({ phase: 'pickup' });
+      expect(root.querySelector('app-cut-line')).toBeNull();
+    });
+
+    it.each(['connected', 'waiting', 'reconnecting'])('is offered while %s', async (state) => {
+      const { root } = await render({ phase: 'live', state, text: 'x' });
+      expect(named(root, 'Cut the line')).toBeDefined();
+    });
+
+    it('is gone once the line has ended', async () => {
+      const { root } = await render({ phase: 'live', state: 'ended', text: 'x' });
+      expect(root.querySelector('app-cut-line')).toBeNull();
+    });
+
+    it('confirms first, then emits; "Keep talking" backs out', async () => {
+      const { fixture, root } = await render({ phase: 'live', text: 'x' });
+      let cut = 0;
+      fixture.componentInstance.cutLine.subscribe(() => cut++);
+      named(root, 'Cut the line')!.click();
+      await fixture.whenStable();
+      expect(cut).toBe(0);
+      named(root, 'Keep talking')!.click();
+      await fixture.whenStable();
+      named(root, 'Cut the line')!.click();
+      await fixture.whenStable();
+      expect(cut).toBe(0);
+      named(root, 'Cut it')!.click();
+      expect(cut).toBe(1);
+    });
+
+    it('says who cut the line and keeps the last text', async () => {
+      const { fixture, root } = await render({ phase: 'live', state: 'ended', text: 'last' });
+      expect(root.textContent).toContain('The line is cut');
+      fixture.componentRef.setInput('cutByYou', true);
+      await fixture.whenStable();
+      expect(root.textContent).toContain('You cut the line');
+      expect(root.querySelector('.reader__text')?.textContent).toBe('last');
+    });
+  });
 });

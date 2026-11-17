@@ -101,4 +101,35 @@ describe('ReceiverPage', () => {
     await fixture.whenStable();
     expect(root.textContent).toContain('Nothing on this line');
   });
+
+  it('cuts the line on purpose: asks first, leaves, wipes the key, keeps the text, says so', async () => {
+    const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
+    root.querySelector('button')!.click();
+    await fixture.whenStable();
+    const named = (name: string) =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === name)!;
+    expect(root.querySelector('app-cut-line')).not.toBeNull();
+    named('Cut the line').click();
+    await fixture.whenStable();
+    named('Cut it').click();
+    // The real relay sets this in leave(); the fake does it by hand.
+    relay.leave.mockImplementation(() => undefined);
+    expect(relay.leave).toHaveBeenCalledOnce();
+    relay.status.set('ended');
+    relay.ended.set('left');
+    await fixture.whenStable();
+    expect(root.textContent).toContain('You cut the line');
+    expect(root.querySelector('app-cut-line')).toBeNull();
+    expect(relay.frames$.observed).toBe(false);
+  });
+
+  it('shows "You cut the line" on the plain ended screen when nothing was received', async () => {
+    const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
+    root.querySelector('button')!.click();
+    await fixture.whenStable();
+    relay.status.set('ended');
+    relay.ended.set('left');
+    await fixture.whenStable();
+    expect(root.querySelector('h2')?.textContent).toBe('You cut the line');
+  });
 });

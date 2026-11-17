@@ -383,6 +383,46 @@ describe('ReceiverSession', () => {
     });
   });
 
+  describe('cut the line', () => {
+    it('leaves once, drops the key and listeners, keeps the last text readable', async () => {
+      await openLine();
+      await send({ t: 'text', text: 'last words', ts: now });
+      session.cutLine();
+      expect(relay.leave).toHaveBeenCalledOnce();
+      expect(relay.frames$.observed).toBe(false);
+      expect(session.text()).toBe('last words');
+      expect(session.stage()).toBe('live');
+      // The relay's own state after `leave()`.
+      relay.ended.set('left');
+      expect(session.lineState()).toBe('ended');
+      expect(session.endReason()).toBe('left');
+      // The key is gone: a frame the transport still delivered is not decrypted.
+      await send({ t: 'text', text: 'late', ts: now });
+      expect(session.text()).toBe('last words');
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('is idempotent and a later destroy or pagehide does not leave again', async () => {
+      await openLine();
+      session.cutLine();
+      session.cutLine();
+      session.ngOnDestroy();
+      pageHide();
+      expect(relay.leave).toHaveBeenCalledOnce();
+    });
+
+    it('does nothing at the gate or after the line already ended', async () => {
+      await visit(sessionId);
+      session.cutLine();
+      expect(relay.leave).not.toHaveBeenCalled();
+      await session.open();
+      relay.status.set('ended');
+      session.cutLine();
+      expect(relay.leave).not.toHaveBeenCalled();
+    });
+  });
+
   describe('page hide', () => {
     it('drops the key and the text of a live line, and a restored page says the link was used', async () => {
       await openLine();

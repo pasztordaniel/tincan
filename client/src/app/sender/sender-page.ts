@@ -19,7 +19,9 @@ export const hasSenderSession: CanActivateFn = () =>
         [text]="session.text()"
         [idleSecondsLeft]="session.idleSecondsLeft()"
         (textChange)="session.edit($event)"
+        [cutByYou]="session.cutByYou()"
         (keepOpen)="session.keepOpen()"
+        (cutLine)="session.cutLine()"
       />
       @if (session.link(); as link) {
         @if (session.state() === 'waiting') {

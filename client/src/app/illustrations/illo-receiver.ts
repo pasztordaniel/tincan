@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { RIGHT_CAN, canTransform } from './can-pose';
 
 /** Placeholder art, swap freely. Receiver: one can, the string comes in from the left. */
 @Component({
@@ -11,17 +12,28 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       [attr.aria-label]="label()"
       focusable="false"
     >
-      @for (x of cans; track x) {
-        <g [attr.transform]="'translate(' + x + ' 0)'">
-          <ellipse class="ground" cx="0" cy="124" rx="42" ry="7" />
-          <path class="can__body" d="M-30 48V116A30 9 0 0 0 30 116V48Z" />
-          <path class="can__label" d="M-30 70A30 9 0 0 0 30 70V92A30 9 0 0 1 -30 92Z" />
-          <path class="can__ridge" d="M-30 60A30 9 0 0 0 30 60M-30 104A30 9 0 0 0 30 104" />
-          <ellipse class="can__rim" cx="0" cy="48" rx="30" ry="9" />
-          <ellipse class="can__mouth" cx="0" cy="48" rx="24" ry="6" />
+      @for (can of cans; track can.x) {
+        <ellipse
+          class="ground"
+          [attr.cx]="can.x"
+          [attr.cy]="can.ground"
+          [attr.rx]="44 * can.scale"
+          ry="5"
+        />
+        <g [attr.transform]="transform(can)">
+          <path class="can__body" d="M-35 -26H35A8 26 0 0 1 35 26H-35Z" />
+          <path class="can__label" d="M-9 -26H9A8 26 0 0 0 9 26H-9A8 26 0 0 1 -9 -26Z" />
+          <path class="can__ridge" d="M-20 -26A8 26 0 0 0 -20 26M20 -26A8 26 0 0 0 20 26" />
+          <ellipse class="can__rim" cx="-35" cy="0" rx="8" ry="26" />
+          <ellipse class="can__mouth" cx="-35" cy="0" rx="5.5" ry="21" />
+          <path class="can__inside" d="M-37 -12A4 14 0 0 0 -37 12" />
+          <circle class="can__knot" cx="43" cy="0" r="3" />
         </g>
       }
-      <path class="string" d="M0 100Q100 116 194 104" />
+      <path
+        class="string"
+        d="M0 72C40 42 96 30 120 32C132 29 136 18 126 16 C116 14 114 30 130 34C180 44 200 150 241 145"
+      />
     </svg>
   `,
   styleUrl: './illustration.scss',
@@ -33,5 +45,6 @@ export class IlloReceiver {
   /** Rendered width in px (height follows the 2:1 viewBox); never wider than the container. */
   readonly width = input(320);
 
-  protected readonly cans = [224];
+  protected readonly cans = [RIGHT_CAN];
+  protected readonly transform = canTransform;
 }

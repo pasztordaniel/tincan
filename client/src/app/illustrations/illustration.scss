@@ -21,6 +21,7 @@ svg {
   fill: var(--illo-can);
   stroke: var(--illo-can-rim);
   stroke-width: 2;
+  stroke-linejoin: round;
 }
 .can__label {
   fill: var(--illo-can-label);
@@ -37,6 +38,16 @@ svg {
 }
 .can__mouth {
   fill: var(--illo-can-shade);
+}
+.can__inside {
+  fill: none;
+  stroke: var(--illo-can-rim);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+/* Where the string goes through the closed bottom of the can. */
+.can__knot {
+  fill: var(--illo-string);
 }
 .string,
 .string-alt,
@@ -69,7 +80,7 @@ svg {
 @media (prefers-reduced-motion: no-preference) {
   .anim-sway {
     transform-box: view-box;
-    transform-origin: 160px 104px;
+    transform-origin: 170px 118px;
     animation: illo-sway 2.4s ease-in-out infinite alternate;
   }
   .anim-hum {

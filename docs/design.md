@@ -70,6 +70,12 @@ These screens or states don't appear in the original sketch, but the protocol ne
    talking** (focus lands on Keep talking; Escape backs out), never a browser dialog. Afterwards the side that cut
    shows the usual ended state titled "You cut the line", text still readable.
 
+8. **QR code (sender, waiting).** Under the link card a **Show QR code** button (closed by default) with the hint
+   "Anyone who scans this can read your messages.", because the code carries the key. Opened, it shows the receiver
+   link as an inline-SVG QR code (about 224 px, at most the column width, so it fits 360 px) with a 4-module quiet
+   zone, always black on white, also in dark mode. It disappears as soon as the line stops waiting (receiver
+   connected, idle, reconnecting, ended) and starts closed again. Shown on `/design` under the sender states.
+
 ## Motion
 Motion is CSS, SVG and the Web Animations API only: no animation library, no inline `style` attributes (the
 CSP is `style-src 'self' 'nonce-...'`). Only transform, opacity and stroke-dashoffset on small paths are

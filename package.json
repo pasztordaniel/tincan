@@ -1,0 +1,40 @@
+{
+  "name": "tincan",
+  "version": "0.0.0",
+  "private": true,
+  "description": "End-to-end encrypted live text sharing from one sender to one receiver.",
+  "type": "module",
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26"
+  },
+  "workspaces": [
+    "shared",
+    "client",
+    "server",
+    "e2e"
+  ],
+  "scripts": {
+    "prepare": "npm run build -w @tincan/shared",
+    "dev": "npm run build -w @tincan/shared && concurrently -k -n shared,server,client -c gray,blue,magenta \"npm run dev -w @tincan/shared\" \"npm run dev -w @tincan/server\" \"npm run dev -w @tincan/client\"",
+    "build": "npm run build -w @tincan/shared && npm run build -w @tincan/client && npm run build -w @tincan/server",
+    "start": "npm run build && npm run serve -w @tincan/server",
+    "test": "npm run build -w @tincan/shared && npm test -w @tincan/shared -w @tincan/client -w @tincan/server",
+    "e2e": "npm run build && npm run test:e2e",
+    "test:e2e": "npm test -w @tincan/e2e",
+    "lint": "npm run build -w @tincan/shared && eslint . && prettier --check . && npm run typecheck --workspaces",
+    "typecheck": "npm run build -w @tincan/shared && npm run typecheck --workspaces",
+    "format": "prettier --write . && eslint --fix .",
+    "verify": "npm run lint && npm test && npm run build && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "angular-eslint": "^22.7.0",
+    "concurrently": "^10.0.7",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.73.0"
+  }
+}

@@ -1,0 +1,10 @@
+dist/
+.angular/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+# Hand-written prose and agent/tooling config are not reformatted by Prettier.
+*.md
+.claude/
+.github/

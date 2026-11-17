@@ -16,3 +16,8 @@ Frame size + rate limits. No payload logging.
 
 ## Log
 <!-- claim, review, security and QA notes go here, newest last -->
+- senior-dev (from T01 review): session IDs must be base64url (no dots), because the SPA fallback in
+  `server/src/app.ts` treats any path with a file extension as a missing file and returns 404.
+- senior-dev (from T01 review): warn or fail fast when the client build is missing; today the server then serves
+  only `/healthz` and socket.io, without any message.
+- T01 review: an engine.io handshake can come from an Origin-less cross-site no-cors GET, so never treat "a handshake happened" as proof of same origin; authorise with tokens. Optionally also reject `Sec-Fetch-Site: cross-site`. Consider a startup warning when `PORT` is invalid.

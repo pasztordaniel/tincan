@@ -5,7 +5,7 @@ The PM owns this table; agents update their own task file's status/branch and lo
 
 | ID | Task | Owner | Depends on | Status |
 |---|---|---|---|---|
-| [T01](T01-monorepo-scaffold.md) | Monorepo scaffold | senior-dev | — | ready |
+| [T01](T01-monorepo-scaffold.md) | Monorepo scaffold | senior-dev | — | in-review |
 | [T02](T02-ci-pipeline.md) | CI pipeline + branch protection | dev | T01 | backlog |
 | [T03](T03-shared-protocol.md) | Shared protocol contract | senior-dev | T01 | backlog |
 | [T04](T04-crypto-core.md) | Crypto core | senior-dev | T03 | backlog |

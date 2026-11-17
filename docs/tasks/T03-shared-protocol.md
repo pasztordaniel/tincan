@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| senior-dev | T01 | backlog | — |
+| senior-dev | T01 | in-progress | `feat/T03-shared-protocol` |
 
 ## Goal
 `shared/`: event names, payload types, frame type `{ v, seq, iv, ct }`, plaintext message union
@@ -15,3 +15,4 @@ This is the contract that lets client and server lanes run in parallel — keep 
 
 ## Log
 <!-- claim, review, security and QA notes go here, newest last -->
+- senior-dev: claimed

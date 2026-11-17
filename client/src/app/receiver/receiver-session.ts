@@ -58,7 +58,8 @@ export class ReceiverSession implements OnDestroy {
   readonly stage = this._stage.asReadonly();
   /** The last good text. Replaced only by an authenticated text message. */
   readonly text = this._text.asReadonly();
-  readonly typing = this._typing.asReadonly();
+  /** Never shown next to "line cut": a typing hold may still be running when the line ends. */
+  readonly typing = computed(() => this._typing() && this.lineState() !== 'ended');
   /** Set once any frame was dropped as untrustworthy; stays up for the rest of the visit. */
   readonly integrityError = this._integrityError.asReadonly();
   /** Why the last Open attempt failed in a way the user can retry, `null` otherwise. */
@@ -140,7 +141,7 @@ export class ReceiverSession implements OnDestroy {
       this.joined = true;
       this.lastFrameAt.set(this.now());
       this.clock.set(this.now());
-      this.tickTimer = setInterval(() => this.clock.set(this.now()), TICK_MS);
+      this.tickTimer = setInterval(() => this.tick(), TICK_MS);
       this._stage.set('live');
       return;
     }
@@ -176,7 +177,9 @@ export class ReceiverSession implements OnDestroy {
 
   private async onFrame(frame: unknown): Promise<void> {
     const opener = this.opener;
-    if (opener === null) return;
+    // The UI says nothing more will arrive once the line is cut (a relay could still push frames
+    // after a bare `peer: gone`).
+    if (opener === null || this.lineState() === 'ended') return;
     const result = await opener.open(frame);
     if (this.destroyed) return;
     if (!result.ok) {
@@ -208,6 +211,16 @@ export class ReceiverSession implements OnDestroy {
     if (this.skew === null || offset < this.skew) this.skew = offset;
     this.lastFrameAt.set(ts + this.skew);
     this.clock.set(arrival);
+  }
+
+  /** Advances the clock for staleness; stops for good once the line has ended. */
+  private tick(): void {
+    if (this.lineState() === 'ended') {
+      if (this.tickTimer) clearInterval(this.tickTimer);
+      this.tickTimer = null;
+      return;
+    }
+    this.clock.set(this.now());
   }
 
   private setTyping(on: boolean): void {

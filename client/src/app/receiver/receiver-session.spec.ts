@@ -320,6 +320,19 @@ describe('ReceiverSession', () => {
       },
     );
 
+    it('does no more work once the line is cut: no frames, no typing, no clock', async () => {
+      await openLine();
+      await send({ t: 'text', text: 'bye', ts: now });
+      await send({ t: 'typing', ts: now });
+      relay.peer.set('gone');
+      expect(session.typing()).toBe(false);
+      await send({ t: 'text', text: 'after the end', ts: now });
+      expect(session.text()).toBe('bye');
+      // The typing hold runs out on its own; the tick stops at its next beat.
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
     it('keeps the last text after the line ends', async () => {
       await openLine();
       await send({ t: 'text', text: 'bye', ts: now });

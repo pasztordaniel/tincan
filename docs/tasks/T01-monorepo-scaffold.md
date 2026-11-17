@@ -35,3 +35,21 @@ strict TS, `engines` + `.nvmrc`.
   - Open questions: npm 11 `allowScripts` skips install scripts of esbuild, @parcel/watcher, lmdb and
     msgpackr-extract, and everything still works without them. (The `engines` question is settled: `engines.node`
     is now `^22.22.3 || ^24.15.0 || >=26`, the range Angular 22 supports, and `.nvmrc` is `24.22`.)
+- senior-dev: review findings addressed, back to in-review.
+  - Server: final 404 and error handlers return bare status text and log nothing from the request
+    (`GET /%E0%A4%A` returns 400 `Bad Request`); `serve` sets `NODE_ENV=production` via `node --env-file`.
+    socket.io `allowRequest` requires Origin to match Host (missing Origin allowed, reason in a comment),
+    `serveClient: false`. PORT validated (1-65535, fallback 3000), clear message and exit 1 on listen errors,
+    SIGINT/SIGTERM close socket.io and HTTP with a 5 s cap.
+  - Client: tsconfig extends `tsconfig.base.json` (so `noUncheckedIndexedAccess` and `verbatimModuleSyntax` apply);
+    dev proxy keeps Host (`changeOrigin: false`), target fixed at 3000 because `ng serve` reads `PORT` itself;
+    `@angular/forms` and the `ng` script removed; vitest ranges aligned.
+  - Tooling: type-aware `no-floating-promises` and `no-misused-promises` in all workspaces; e2e `webServer` runs
+    the serve script, `npm run e2e` builds first, `verify` builds once and runs `test:e2e`; E2E_PORT validated.
+  - Tested: clean `npm install` + `npm run verify` green (shared 1, client 2, server 26 unit tests; e2e 1), one
+    build. `npm run e2e` alone from an empty build passes. Origin check end to end through ng serve (scratch proxy
+    pointing at a server on 3300): same-origin polling 200 and WebSocket 101, foreign Origin 403 (polling) and 400
+    (WebSocket); with `changeOrigin: true` the same-origin handshake fails (403), confirming the check bites. Built
+    server: occupied port prints one line and exits 1, SIGTERM exits 0.
+  - Deferred to other tasks (logged there): T02 install scripts and `npm ci --omit=dev`; T05 base64url session IDs
+    and missing-client warning; T06 `inlineCritical` and `style-src`.

@@ -91,6 +91,16 @@ export class Peer {
     this.socket.io.engine.close();
   }
 
+  /**
+   * Simulates a half-open connection (network lost, socket not closed): the client stops sending
+   * anything, pongs included, while the transport stays open. Only the relay's heartbeat can notice.
+   * `_sendPacket` is engine.io-client internals, acceptable in a test helper.
+   */
+  goSilent(): void {
+    const engine = this.socket.io.engine as unknown as { _sendPacket: () => void };
+    engine._sendPacket = () => undefined;
+  }
+
   /** An explicit leave, as a closing or reloading tab does it. */
   leave(): void {
     this.socket.disconnect();

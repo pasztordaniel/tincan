@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { CryptoService } from '../crypto/crypto.service';
 import type { FrameSealer } from '../crypto/frame-crypto';
 import { randomSessionId } from '../crypto/test-helpers';
+import { PageLifecycle } from '../lifecycle/page-lifecycle';
 import {
   RelayService,
   type ConnectionStatus,
@@ -40,6 +41,9 @@ describe('ReceiverSession', () => {
   let sealer: FrameSealer;
   let session: ReceiverSession;
   let cryptoService: CryptoService;
+  /** Fires the page's `pagehide` for the session under test. */
+  let pageHide: () => void;
+  let offHide: ReturnType<typeof vi.fn>;
 
   /** Visits `/r/<id>#<key>`; the fragment is what the real link carries. */
   async function visit(id: string | null, hash: string | null = keyString): Promise<void> {
@@ -67,6 +71,7 @@ describe('ReceiverSession', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     relay = new FakeRelay();
+    offHide = vi.fn();
     now = 1_000_000;
     sessionId = randomSessionId();
     TestBed.configureTestingModule({
@@ -74,6 +79,15 @@ describe('ReceiverSession', () => {
         ReceiverSession,
         { provide: RelayService, useValue: relay },
         { provide: RECEIVER_CLOCK, useValue: () => now },
+        {
+          provide: PageLifecycle,
+          useValue: {
+            onHide: (handler: () => void) => {
+              pageHide = handler;
+              return offHide;
+            },
+          },
+        },
       ],
     });
     cryptoService = TestBed.inject(CryptoService);
@@ -366,6 +380,56 @@ describe('ReceiverSession', () => {
       session.ngOnDestroy();
       expect(relay.leave).toHaveBeenCalledOnce();
       expect(relay.frames$.observed).toBe(false);
+    });
+  });
+
+  describe('page hide', () => {
+    it('drops the key and the text of a live line, and a restored page says the link was used', async () => {
+      await openLine();
+      await send({ t: 'text', text: 'secret', ts: now });
+      expect(session.text()).toBe('secret');
+      pageHide();
+      expect(session.text()).toBe('');
+      expect(session.stage()).toBe('used');
+      expect(relay.leave).toHaveBeenCalledOnce();
+      expect(relay.frames$.observed).toBe(false);
+      // Nothing is decrypted any more, even if the transport still delivered a frame.
+      await send({ t: 'text', text: 'late', ts: now });
+      expect(session.text()).toBe('');
+    });
+
+    it('turns the gate into used, so a restored page cannot join with the old key', async () => {
+      await visit(sessionId);
+      pageHide();
+      expect(session.stage()).toBe('used');
+      await session.open();
+      expect(relay.join).not.toHaveBeenCalled();
+    });
+
+    it('gives the slot back when the page goes away while the join is in flight', async () => {
+      await visit(sessionId);
+      let answer!: (outcome: JoinOutcome) => void;
+      relay.join.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+      const opening = session.open();
+      pageHide();
+      answer({ ok: true });
+      await opening;
+      expect(relay.leave).toHaveBeenCalledOnce();
+      expect(session.stage()).toBe('used');
+    });
+
+    it('is idempotent, and leaves invalid links alone', async () => {
+      await visit('not-an-id');
+      pageHide();
+      pageHide();
+      expect(session.stage()).toBe('invalid');
+      expect(relay.leave).not.toHaveBeenCalled();
+    });
+
+    it('unregisters on destroy', async () => {
+      await visit(sessionId);
+      session.ngOnDestroy();
+      expect(offHide).toHaveBeenCalledOnce();
     });
   });
 });

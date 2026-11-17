@@ -9,6 +9,7 @@ import {
 import { STALE_AFTER_MS, isSessionId, type JoinError } from '@tincan/shared';
 import { CryptoService } from '../crypto/crypto.service';
 import type { FrameOpener } from '../crypto/frame-crypto';
+import { PageLifecycle } from '../lifecycle/page-lifecycle';
 import { RelayService, type RelayEndReason } from '../relay/relay.service';
 import type { LineState } from '../ui/status-pill/status-pill.model';
 
@@ -102,6 +103,7 @@ export class ReceiverSession implements OnDestroy {
   private destroyed = false;
   private typingTimer: ReturnType<typeof setTimeout> | null = null;
   private tickTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly offHide = inject(PageLifecycle).onHide(() => this.hangUp());
 
   /**
    * Reads (and clears) the fragment, then checks the id. The fragment is consumed synchronously, before
@@ -152,7 +154,21 @@ export class ReceiverSession implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.offHide();
     this.cleanup();
+  }
+
+  /**
+   * The page goes away (`pagehide`): like a reload, the key, the plaintext and the timers go with it. A
+   * page restored from bfcache then says the link was used instead of showing the old text or offering
+   * an Open that would join with a key the page should no longer hold (ADR 0004).
+   */
+  private hangUp(): void {
+    this.cleanup();
+    this._text.set('');
+    this._typing.set(false);
+    const stage = this._stage();
+    if (stage === 'checking' || stage === 'gate' || stage === 'live') this._stage.set('used');
   }
 
   // --- frames -------------------------------------------------------------------------------

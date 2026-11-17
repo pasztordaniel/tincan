@@ -176,7 +176,8 @@ export class FrameSealer {
       return result;
     };
     const result = this.tail.then(run);
-    this.tail = result;
+    // Keep the chain alive even if a step ever rejected (none is expected to).
+    this.tail = result.catch(() => undefined);
     return result;
   }
 }
@@ -207,7 +208,8 @@ export class FrameOpener {
       return result;
     };
     const result = this.tail.then(run);
-    this.tail = result;
+    // Keep the chain alive even if a step ever rejected (none is expected to).
+    this.tail = result.catch(() => undefined);
     return result;
   }
 }

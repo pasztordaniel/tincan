@@ -43,3 +43,13 @@ No remote fonts or assets (CSP). Screens, states and illustrations: [`docs/desig
   string, the string leaves the closed bottom; string stroke halved to 1.5; the "e" loop shows only on a
   live line (`live` input on sender and receiver), every other state draws a plain arc, and the fray sits at
   the middle of the arc.
+- designer: idle warning and motion round. Sender idle state (banner, `role="timer"` countdown, Keep the line
+  open). Hero cans (full-bleed at 360 px, about 78vw on desktop), fluid type scale, soft tinted backdrop with
+  a same-origin grain, button and dialog micro-interactions, trust cues on home. String redrawn to the
+  maintainer's sketches: low and level from the can bottom into one big cursive "e" loop; the loop shows on
+  every open line (dim while waiting), trouble states use a plain low sag; the idle sender keeps the
+  one-can framing with scissors near the edge (`IlloLineSnip` folded into `IlloSender`). Motion (CSS and
+  WAAPI only, all one-shot, none under reduced motion) listed in docs/design.md and replayable on
+  `/design#motion`. Bundle against the previous round: initial 273.16 kB to 279.30 kB (70.75 kB to
+  73.22 kB transfer), global CSS 7.08 kB to 11.69 kB (illustration motion lives there once instead of in
+  every illustration component), design-page chunk 24.73 kB to 29.46 kB.

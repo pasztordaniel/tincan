@@ -26,7 +26,8 @@ finding changes the plan. The PM assigns tasks; developers don't pick work outsi
 3. **In review**: `senior-dev` runs `/code-review`; if the task touches the security surface, `security-pentester`
    runs `/security-review` + `crypto-review`. Findings go back to the dev.
 4. **QA**: `qa-tester` runs the golden paths in a browser on that branch. Any failure → back to `in-progress` with a
-   reproduction. Only a QA-passed branch may become a PR.
+   reproduction. On a pass, QA commits a test report with screenshots to `docs/testing/` (see
+   [`docs/testing/README.md`](testing/README.md)). Only a QA-passed branch may become a PR.
 5. **PR**: `pr-gate` skill runs all automated gates and opens the PR with the template filled in.
 6. **Human** reviews and merges. PM marks the task `done` and unblocks dependents.
 
@@ -39,7 +40,7 @@ additions, anything that reads/writes the URL, storage or clipboard.
 2. Guard: no secrets, no debug logging of frames/keys, no `innerHTML`/`bypassSecurityTrust*`.
 3. `/code-review` clean (or findings answered).
 4. `/security-review` + `crypto-review` for security-surface changes.
-5. QA sign-off recorded in the task file.
+5. QA sign-off recorded in the task file, and the test report with screenshots is in `docs/testing/`.
 6. Docs/ADR updated if behaviour or a decision changed.
 
 ## Git conventions

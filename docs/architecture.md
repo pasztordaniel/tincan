@@ -54,6 +54,14 @@ purpose. The sender goes through the idle-cut path (`SenderSession.cutLine()`: k
 `leave()`), the receiver through the `pagehide` cleanup (`ReceiverSession.cutLine()`). While connected the peer sees
 `peer_left` at once; while this side is reconnecting or offline the explicit disconnect cannot be delivered, so the cut
 is local at once and the peer learns of it (`peer_timeout`) when the 20 s grace runs out. The side that cut says "You cut the line" and, like every ended state, keeps the last text readable.
+Going home (T19): every page but home has a home link in the app shell (`nav/home-link.ts`). Leaving a view ends its
+line through the same teardown as before: `SenderPage.ngOnDestroy` calls `SenderSession.end()` and the page-scoped
+`ReceiverSession` runs its `pagehide` cleanup on destroy, each with one explicit `leave()`, so the peer sees the cut.
+While the line is open (sender: waiting, connected, idle, reconnecting; receiver: after Pick up until ended) the
+`confirmLeave` `canDeactivate` guard (`nav/leave-confirm.ts`) holds any in-app navigation until the user answers
+"Leave and cut the line?"; otherwise it lets the navigation through at once. Browser Back/Forward (`popstate`) is
+not held and ends the line like closing the tab. After leaving, Back cannot restore anything: `/s` redirects home
+(no session), and `/r/<id>` has no fragment left, so it says the link was used.
 Network blips (WebSocket closed, relay unreachable) are the other path: both sides show "Line is slack,
 reconnecting...", the client resumes with its token through socket.io's reconnection (500 ms to 3 s backoff, so no
 extra reaction to the browser's `online` event is needed), and the sender resends its latest text.

@@ -86,6 +86,17 @@ These screens or states don't appear in the original sketch, but the protocol ne
    zone, always black on white, also in dark mode. It disappears as soon as the line stops waiting (receiver
    connected, idle, reconnecting, ended) and starts closed again. Shown on `/design` under the sender states.
 
+9. **Home control.** Every page except home has a way back, pinned top-left as the mirror of the theme toggle: the
+   same 2.75rem pill, border and shadow, holding a small can glyph and the wordmark "tincan" in the display face. It
+   is a real link to `/` (accessible name "tincan home", tooltip "Back to home") with the usual focus ring. When the
+   line is ended, cut, busy, invalid, or the receiver has not picked up yet, it simply goes home. While the line is
+   open (sender waiting, connected, idle or reconnecting; receiver after Pick up) leaving would cut it, so a tap only
+   opens the same inline question as Cut the line, right under the control: "Leave and cut the line?" with
+   **Leave** (danger) and **Stay** (focus lands on Stay; Escape backs out and focus returns to the control). If the
+   line ends while the question is up, the question goes away. Never a browser dialog. Leaving drops the key and
+   tells the peer exactly like Cut the line; browser Back after that shows nothing of the old line. Shown on
+   `/design` under "9. Home control".
+
 ## Motion
 Motion is CSS, SVG and the Web Animations API only: no animation library, no inline `style` attributes (the
 CSP is `style-src 'self' 'nonce-...'`). Only transform, opacity and stroke-dashoffset on small paths are

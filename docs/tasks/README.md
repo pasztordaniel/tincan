@@ -23,6 +23,7 @@ The PM owns this table; agents update their own task file's status/branch and lo
 | [T16](T16-cut-the-line.md) | Cut the line button | dev | T08, T09, T10 | done |
 | [T17](T17-string-to-edge.md) | String to the viewport edge | designer | T11, T08, T09 | done |
 | [T18](T18-qr-code.md) | Receiver link as a QR code | dev | T08 | done |
+| [T19](T19-home-link.md) | A way back to the home page | designer | T09, T10, T16 | in-review |
 
 ## Parallel lanes
 ```

@@ -29,6 +29,13 @@
 4. Sender emits `frame`s; server forwards them to the receiver socket only.
 5. Disconnect → peer sees `reconnecting`; within the grace period the same tab may resume
    (`session:resume` with its token/receiver token). After the grace period, or on reload, the session ends.
+   A valid resume also replaces a socket the server still considers attached to that slot (network switch): the
+   new socket takes the slot and the server disconnects the old one, without a grace period or `peer` change.
+6. Idleness: the sender's client measures time since the last text change (or "keep line open" action). At
+   `IDLE_WARNING_MS` (9 min) it warns that the line will be cut; at `IDLE_CUT_MS` (10 min) it ends the session
+   itself (local reason `idle`, explicit leave, so the receiver sees `peer_left`). The server only has backstops:
+   `SESSION_IDLE_TTL_MS` (15 min without any frame) and `MAX_SESSION_LIFETIME_MS` (2 h after create), both ending
+   with `idle`. The relay cannot tell text from beats and must not be able to, so it cannot enforce idleness itself.
 
 ## Wire protocol (v1)
 `shared/` is the authoritative contract: event names (`EVENTS`), payload and ack types, the socket.io event maps
@@ -48,6 +55,8 @@ inbound payload with those validators (the server distrusts sockets, the client 
 Rules:
 - Error acks are `{ ok: false, error }`; the full code union is `ErrorCode` in `shared/`. Resume answers `not_found`
   for an unknown session, a wrong token and an expired grace period alike, so it reveals nothing about tokens.
+- A resume with a valid token for a slot whose socket is still attached replaces that socket (the old one is
+  disconnected by the server). This is the contract T05 implements.
 - After a successful create, join or resume the server emits `peer` with the other party's current state, so acks
   carry no peer state. A `frame` ack means "accepted by the relay", not "delivered".
 - A tab that leaves on purpose (close, reload) calls `socket.disconnect()`; the server sees
@@ -92,4 +101,5 @@ Frame encryption:
 ## Limits (server-enforced)
 Max socket.io message 96 KiB (`MAX_MESSAGE_BYTES`, the `maxHttpBufferSize`; the largest legitimate frame is about
 87.5 KB because a 64 KiB bucket grows by a third as base64url, see ADR 0007), max 20 frames/s per sender, session
-idle TTL 1 h, reconnect grace 20 s.
+idle TTL 15 min without any frame, absolute session lifetime 2 h, reconnect grace 20 s. Idleness by text activity
+(warn at 9 min, cut at 10 min) is enforced by the sender's client, not the server.

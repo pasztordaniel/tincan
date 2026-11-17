@@ -41,6 +41,18 @@ describe('@tincan/shared', () => {
     expect(shared.MAX_PADDED_BYTES).toBe(shared.PADDING_BUCKETS.at(-1));
   });
 
+  it('orders the idle timers: client warns, then cuts, before the server backstops fire', () => {
+    expect(shared.IDLE_WARNING_MS).toBe(9 * 60_000);
+    expect(shared.IDLE_CUT_MS).toBe(10 * 60_000);
+    expect(shared.SESSION_IDLE_TTL_MS).toBe(15 * 60_000);
+    expect(shared.MAX_SESSION_LIFETIME_MS).toBe(2 * 60 * 60_000);
+    expect(shared.IDLE_WARNING_MS).toBeLessThan(shared.IDLE_CUT_MS);
+    expect(shared.IDLE_CUT_MS).toBeLessThan(shared.SESSION_IDLE_TTL_MS);
+    expect(shared.SESSION_IDLE_TTL_MS).toBeLessThan(shared.MAX_SESSION_LIFETIME_MS);
+    // A live sender beats far more often than the server's no-frame TTL.
+    expect(shared.BEAT_INTERVAL_MS * 3).toBeLessThan(shared.SESSION_IDLE_TTL_MS);
+  });
+
   it('leaves room for the largest legitimate frame under the message limit', () => {
     const ctLength = base64UrlLength(shared.MAX_PADDED_BYTES + shared.GCM_TAG_BYTES);
     const frame = {

@@ -33,8 +33,10 @@
 | Clickjacking, MIME sniffing, cross-origin leaks | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`, `Permissions-Policy` denying camera, microphone, geolocation and more; no `X-Powered-By` | `server/src/headers.ts` |
 | Stale or cached shell / downgrade | `Cache-Control: no-store` on everything except hashed assets (immutable); `Strict-Transport-Security` (1 year, includeSubDomains) only on requests seen as HTTPS (TLS or `X-Forwarded-Proto: https`; forging it over HTTP is harmless, browsers ignore HSTS there) | `server` |
 | Dotfile / source disclosure | Any path with a dot-segment (`/.env`, `/.git/...`, also percent-encoded) answers 404; never served and never answered with the SPA | `server` |
-| Abuse / DoS | Frame size limit, rate limit, session TTL, bounded session count | `server` |
+| Abuse / DoS | Frame size limit, rate limit, session TTL (15 min without frames), 2 h absolute session lifetime, bounded session count | `server` |
 | Stale sessions | Session ends on reload/close; 20 s grace for network blips only | `server`, `client` |
+| Forgotten open line | Sender's client warns after 9 min without a text change and cuts the session at 10 min (explicit leave); the relay never learns text-vs-beat, so it only enforces the frame TTL and the lifetime cap | `client`, `server` |
+| Hijacked slot on resume | Resume needs the slot's 128-bit token; a valid resume replaces a still-attached socket (network switch), every failure is one `not_found` | `server` |
 
 ### Deployment notes
 - **Reverse proxy must preserve `Host`** (nginx: `proxy_set_header Host $host;`). The socket.io origin check compares

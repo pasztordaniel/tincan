@@ -85,8 +85,18 @@ export const MAX_FRAMES_PER_WINDOW = 20;
 /** Window for `MAX_FRAMES_PER_WINDOW`. */
 export const FRAME_RATE_WINDOW_MS = 1000;
 
-/** A session with no frame and no join/resume for this long is ended. */
-export const SESSION_IDLE_TTL_MS = 60 * 60 * 1000;
+/**
+ * Server backstop: a session with no frame and no join/resume for this long is ended (`idle`). A live
+ * sender beats every `BEAT_INTERVAL_MS`, so this only catches senders that stopped sending at all.
+ * Real idleness (no text change) is enforced by the sender's client, see `IDLE_CUT_MS`.
+ */
+export const SESSION_IDLE_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * Server hard cap: a session ends this long after `session:create`, whatever its traffic. The relay
+ * cannot tell text frames from beats (by design), so this is its only bound on an always-beating tab.
+ */
+export const MAX_SESSION_LIFETIME_MS = 2 * 60 * 60 * 1000;
 
 /** How long a disconnected sender or receiver may take to `session:resume` before the session ends. */
 export const RECONNECT_GRACE_MS = 20_000;
@@ -105,6 +115,20 @@ export const TYPING_MIN_INTERVAL_MS = 1000;
 export const BEAT_INTERVAL_MS = 5000;
 /** The receiver marks the view stale after this long without any authenticated frame. */
 export const STALE_AFTER_MS = 15_000;
+
+/**
+ * Sender-side idleness, measured from the last text change (or "keep line open" action) in the
+ * sender's client. Beats and typing frames do not count. The relay never learns about this.
+ *
+ * After `IDLE_WARNING_MS` the sender UI warns that the line will be cut and offers "keep line open".
+ */
+export const IDLE_WARNING_MS = 9 * 60 * 1000;
+/**
+ * After `IDLE_CUT_MS` with no text change and no keep-alive action, the sender ends the session itself
+ * (local end reason `idle`, then an explicit leave via `socket.disconnect()`; the receiver gets
+ * `peer: gone` and `session:ended { reason: 'peer_left' }` as for any explicit leave).
+ */
+export const IDLE_CUT_MS = 10 * 60 * 1000;
 
 // ---------------------------------------------------------------------------------------------
 // Numeric ranges.

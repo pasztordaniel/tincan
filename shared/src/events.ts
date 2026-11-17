@@ -17,7 +17,11 @@ export const EVENTS = Object.freeze({
   create: 'session:create',
   /** Receiver to server: claim the single receiver slot. */
   join: 'session:join',
-  /** Sender or receiver to server: re-attach a new socket to its slot within the grace period. */
+  /**
+   * Sender or receiver to server: re-attach a new socket to its slot. Works within the reconnect grace
+   * and also while the old socket still looks attached (e.g. a network switch the server has not
+   * noticed yet): a valid token replaces that socket, and the server disconnects the old one.
+   */
   resume: 'session:resume',
   /** Sender to server to receiver: one encrypted frame. */
   frame: 'frame',
@@ -116,7 +120,9 @@ export const END_REASONS = Object.freeze([
  * - `peer_left`: the other party left on purpose (closed or reloaded the tab; the client calls
  *   `socket.disconnect()`, which the server sees as `client namespace disconnect`).
  * - `peer_timeout`: the other party dropped and did not resume within the grace period.
- * - `idle`: no activity for the idle TTL.
+ * - `idle`: the server ended the session: no frame and no join/resume for `SESSION_IDLE_TTL_MS`, or
+ *   `MAX_SESSION_LIFETIME_MS` since create. (A sender that cuts an idle line itself, after
+ *   `IDLE_CUT_MS`, leaves explicitly, so its receiver sees `peer_left`.)
  * - `shutdown`: the server is stopping.
  */
 export type EndReason = (typeof END_REASONS)[number];
@@ -148,6 +154,11 @@ export type FrameResult = AckResult<object, FrameError>;
 // state of the other party, so acks carry no peer state. A successful `frame` ack means "accepted by
 // the relay", not "delivered": frames for an absent receiver are dropped, and the sender resends its
 // latest text when `peer` turns `connected` (full-state frames, ADR 0002).
+//
+// `session:resume` with a valid token for a slot whose socket is still attached replaces that socket:
+// the server binds the new socket to the slot and disconnects the old one (its later disconnect must
+// not start a grace period or emit `peer` for the slot). This covers a network switch. Unknown session,
+// wrong token and an expired grace period all answer `not_found`.
 //
 // The server must treat handler arguments as untrusted: a client can omit the ack, pass a non-function
 // ack, or put extra arguments first. Validate the payload with the guards below and only call `ack`

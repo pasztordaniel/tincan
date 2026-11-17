@@ -108,3 +108,6 @@ Framework-free TS module in `client/`: generate key, export/import as base64url 
     object per call. If that ever becomes awkward, the fix is to pad eagerly, since padding does not depend on seq.
   - Nit: `test-helpers.ts` is type-checked by the app tsconfig but never bundled, because nothing in the app imports
     it. This is acceptable.
+- orchestrator: rebased onto `main` after T03 merged; `npm run verify` green.
+- qa-tester: QA PASS. 36 in-page checks in real Chromium (golden path, tampering, replay, padding, independent
+  WebCrypto decrypt against the documented AAD). Report: [`docs/testing/T04.md`](../testing/T04.md).

@@ -8,6 +8,7 @@ Every task that passes QA leaves a report here, so anyone can see what was teste
 | T06 | [T06](T06.md) | PASS |
 | T03 | [T03](T03.md) | PASS |
 | T04 | [T04](T04.md) | PASS |
+| T11 | [T11](T11.md) | PASS |
 <!-- qa-tester appends one row per passed task, newest last -->
 
 ## Conventions

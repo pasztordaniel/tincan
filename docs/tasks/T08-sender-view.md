@@ -31,3 +31,13 @@ input disabled once the session ends.
   E2E `e2e/tests/sender.spec.ts`: no request URL/header/body, websocket frame, URL or storage contains the key.
 - dev: open questions. No `pagehide` explicit leave: a reload leaves via the 20 s grace, not at once (ADR 0004 says the
   peer is told; consider for T10). Full sender-to-receiver e2e is T12.
+- security-pentester: reviewed T08 (`/security-review` + `crypto-review`). Key handling, fresh message per seal,
+  frame sizes (10k UTF-16 units worst case ~60 KB plaintext, ~87.5 KB frame < 96 KiB), no HTML sinks, CSP-safe
+  templates, and traffic bounds (< 6 events/s vs. 20/s cap) pass. Fixed (Low): `start()` raced by `end()` or a newer
+  `start()` could leave an unowned live session; a frame sealed during `end()` could still be sent (on a new session's
+  socket it would fail auth and could poison the relay's seq check); a late ack of an older text could clear the
+  resend flag of a newer refused one; a modified Join click (new tab) marked the session as handed over, so "Not now"
+  left it open. Also: home ends an owned session on destroy, closes the dialog when the session ends under it; e2e
+  also checks title, history state and console for the key. Accepted: `slice` at `MAX_TEXT_LENGTH` may split a
+  surrogate pair (escaped by `JSON.stringify`, fits the bucket math; cosmetic only); typing frames reach the relay
+  while no receiver is attached (padded like content, R-3 metadata).

@@ -71,6 +71,31 @@ Rules:
   own data properties only, exact types and ranges. Handlers must also treat the ack argument as untrusted (it may be
   missing or not a function).
 
+Relay behaviour (`server/src/relay/`, T05) beyond the table:
+- An event whose last argument is not a function is ignored entirely (nobody would learn the result); payload arity
+  is exact, so extra arguments answer `bad_request`. `session:create` takes no payload.
+- One session slot per socket: `session:create` on a bound socket answers `rate_limited`, `session:join` and
+  `session:resume` on a bound socket answer `bad_request`. `busy` means the server's session cap (default 10 000).
+- `frame` checks the sender first (`unauthorized`), then `isFrame` and a strictly increasing `seq` per session
+  (`bad_request`). The relay forwards a fresh `{ v, seq, iv, ct }` object and never decrypts.
+- Resume compares the token with both slot tokens in constant time, against a random stand-in when the session or the
+  receiver slot does not exist, and answers `not_found` for every failure.
+- Rate limit: every client event counts, 20 per 1 s window per socket. Above it a `frame` gets `rate_limited` and
+  other events are dropped without an ack; at 60 events in one window the socket is disconnected and its session ends
+  as an explicit leave (`peer_left`). Clients must not buffer frames while offline (socket.io's default send buffer
+  would replay them as a burst).
+- socket.io binary packets (types 5 and 6) and binary engine.io messages close the connection before they are decoded,
+  also before the client has joined the namespace (a bound socket's session ends as `peer_left`). A message above `MAX_MESSAGE_BYTES` closes the transport, which the relay
+  treats as a drop (grace).
+- Slow receiver: when 40 packets are queued for a receiver that is not reading, the next frame drops the receiver's
+  connection instead of being buffered (a drop: grace, `peer: reconnecting` to the sender; after a resume the sender
+  resends its full state).
+- Disconnect reasons: `client namespace disconnect` ends the session at once (`peer_left`); every other reason starts
+  the grace (`peer: reconnecting` to the other party). A socket replaced by a takeover is unbound before the server
+  disconnects it, so its disconnect changes nothing.
+- A socket with no successful create, join or resume within 10 s of connecting is disconnected (`io server
+  disconnect`); failed attempts do not count. Once bound, sockets stay connected after `session:ended`, unbound. On SIGINT/SIGTERM every session ends with `shutdown`.
+
 Identifiers and encodings (all canonical unpadded base64url, `[A-Za-z0-9_-]`, never `.`):
 
 | Value | Size | Encoded length |
@@ -113,6 +138,7 @@ Frame encryption:
 
 ## Limits (server-enforced)
 Max socket.io message 96 KiB (`MAX_MESSAGE_BYTES`, the `maxHttpBufferSize`; the largest legitimate frame is about
-87.5 KB because a 64 KiB bucket grows by a third as base64url, see ADR 0007), max 20 frames/s per sender, session
+87.5 KB because a 64 KiB bucket grows by a third as base64url, see ADR 0007), max 20 events/s per socket (frames above it are rejected, a flood of 60 in one window disconnects), at most
+10 000 sessions, session
 idle TTL 15 min without any frame, absolute session lifetime 2 h, reconnect grace 20 s. Idleness by text activity
 (warn at 9 min, cut at 10 min) is enforced by the sender's client, not the server.

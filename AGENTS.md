@@ -31,6 +31,7 @@ npm run test:e2e     # Playwright only, against the existing build
 npm run lint         # ESLint (incl. angular-eslint, type-aware promise rules) + Prettier check + typecheck
 npm run format       # Prettier write + ESLint autofix
 npm run verify       # lint, test, build, e2e (one build): everything CI runs, in CI order
+npm run demo:gif     # build, then record docs/media/demo.gif (needs ffmpeg; not part of verify)
 ```
 Dev uses fixed ports: do not set `PORT` for `npm run dev`, because `ng serve` reads it too.
 

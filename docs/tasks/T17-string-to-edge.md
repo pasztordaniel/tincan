@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| designer | T11, T08, T09 | pr-open | `feat/T17-string-to-edge` |
+| designer | T11, T08, T09 | done | `feat/T17-string-to-edge` |
 
 ## Goal
 Product owner request: with a sender window on the left and a receiver window on the right, the two strings should

@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| security-pentester | continuous; final after T12 | in-review | `fix/T13-security-pass` |
+| security-pentester | continuous; final after T12 | done | `fix/T13-security-pass` |
 
 ## Goal
 Review every security-surface PR (`/security-review`, `crypto-review`). At the end run `security-audit` and fix or

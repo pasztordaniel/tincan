@@ -19,6 +19,10 @@ import { type CanRole, type LineState, pillContent } from './status-pill.model';
             <circle cx="2.5" cy="6" r="2" class="pill__end" />
             <circle cx="21.5" cy="6" r="2" class="pill__end" />
           }
+          @case ('snip') {
+            <path d="M2 8H22" />
+            <path d="M8.5 0.5L12 5.5L15.5 0.5" class="pill__x" />
+          }
           @case ('slack') {
             <path class="pill__wave" d="M2 6C6 1 8 1 12 6S18 11 22 6" />
           }
@@ -52,6 +56,10 @@ import { type CanRole, type LineState, pillContent } from './status-pill.model';
     .pill--connected {
       --pill-bg: var(--tone-connected-bg);
       --pill-fg: var(--tone-connected-fg);
+    }
+    .pill--idle {
+      --pill-bg: var(--tone-warning-bg);
+      --pill-fg: var(--tone-warning-fg);
     }
     .pill--reconnecting {
       --pill-bg: var(--tone-reconnecting-bg);

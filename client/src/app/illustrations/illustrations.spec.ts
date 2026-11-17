@@ -6,6 +6,7 @@ import {
   IlloLineCut,
   IlloLineFrayed,
   IlloLineSlack,
+  IlloLineSnip,
   IlloReceiver,
   IlloSender,
 } from './index';
@@ -17,6 +18,7 @@ const ALL: Type<unknown>[] = [
   IlloLineBusy,
   IlloLineCut,
   IlloLineSlack,
+  IlloLineSnip,
   IlloLineFrayed,
 ];
 

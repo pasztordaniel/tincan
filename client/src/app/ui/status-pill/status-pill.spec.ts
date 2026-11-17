@@ -12,6 +12,10 @@ describe('pillContent', () => {
       text: 'Connected: they can hear you',
       icon: 'taut',
     });
+    expect(pillContent('idle', 'sender')).toEqual({
+      text: 'Idle: the string will be cut soon',
+      icon: 'snip',
+    });
     expect(pillContent('reconnecting', 'sender')).toEqual({
       text: 'Line is slack, reconnecting...',
       icon: 'slack',
@@ -25,7 +29,7 @@ describe('pillContent', () => {
   });
 
   it('never relies on color alone: icons are unique per state', () => {
-    const states: LineState[] = ['waiting', 'connected', 'reconnecting', 'ended'];
+    const states: LineState[] = ['waiting', 'connected', 'idle', 'reconnecting', 'ended'];
     const icons = new Set(states.map((s) => pillContent(s, 'sender').icon));
     expect(icons.size).toBe(states.length);
   });

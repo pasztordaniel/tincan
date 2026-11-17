@@ -8,5 +8,6 @@ export { IlloLineBusy } from './illo-line-busy';
 export { IlloLineCut } from './illo-line-cut';
 export { IlloLineFrayed } from './illo-line-frayed';
 export { IlloLineSlack } from './illo-line-slack';
+export { IlloLineSnip } from './illo-line-snip';
 export { IlloReceiver } from './illo-receiver';
 export { IlloSender } from './illo-sender';

@@ -6,6 +6,7 @@ import {
   IlloLineCut,
   IlloLineFrayed,
   IlloLineSlack,
+  IlloLineSnip,
   IlloReceiver,
   IlloSender,
 } from '../illustrations';
@@ -44,6 +45,7 @@ const SAMPLE =
     IlloLineBusy,
     IlloLineCut,
     IlloLineSlack,
+    IlloLineSnip,
     IlloLineFrayed,
   ],
   template: `
@@ -215,6 +217,7 @@ const SAMPLE =
               <app-illo-line-busy [width]="140" />
               <app-illo-line-cut [width]="140" />
               <app-illo-line-slack [width]="140" />
+              <app-illo-line-snip [width]="140" />
               <app-illo-line-frayed [width]="140" />
             </div>
           </figure>
@@ -320,10 +323,17 @@ export class DesignPage {
     },
   ];
   protected readonly pickupPhase = signal<ReceiverPhase>('pickup');
-  protected readonly pillStates: LineState[] = ['waiting', 'connected', 'reconnecting', 'ended'];
+  protected readonly pillStates: LineState[] = [
+    'waiting',
+    'connected',
+    'idle',
+    'reconnecting',
+    'ended',
+  ];
   protected readonly senderStates: { state: LineState; caption: string; text: string }[] = [
     { state: 'waiting', caption: 'Waiting, ready to type', text: '' },
     { state: 'connected', caption: 'Connected, writing', text: SAMPLE },
+    { state: 'idle', caption: 'Idle, about to be cut', text: SAMPLE },
     { state: 'reconnecting', caption: 'Reconnecting', text: SAMPLE },
     { state: 'ended', caption: 'Line cut (read-only)', text: SAMPLE },
   ];

@@ -76,6 +76,13 @@ export type BannerTone = 'warning' | 'info';
 export class WarningBanner {
   readonly tone = input<BannerTone>('warning');
   readonly heading = input('');
+  /**
+   * Off when something else already announces the change (the sender's idle warning lets the status
+   * pill speak once, so a ticking countdown inside the banner is never read out every second).
+   */
+  readonly announce = input(true);
 
-  protected readonly role = computed(() => (this.tone() === 'warning' ? 'alert' : 'status'));
+  protected readonly role = computed(() =>
+    !this.announce() ? null : this.tone() === 'warning' ? 'alert' : 'status',
+  );
 }

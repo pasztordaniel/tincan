@@ -36,4 +36,24 @@ describe('SenderScreen', () => {
     const describedBy = area.getAttribute('aria-describedby')!;
     expect(root.querySelector(`#${describedBy}`)?.textContent).toContain('Nothing you type');
   });
+
+  it('warns an idle sender with a quiet countdown and a keep-open button', async () => {
+    const { fixture, root } = await render('idle', 'draft');
+    fixture.componentRef.setInput('idleSecondsLeft', 59);
+    await fixture.whenStable();
+    expect(root.querySelector('app-illo-line-snip')).not.toBeNull();
+    expect(root.textContent).toContain('Idle: the string will be cut soon');
+    const timer = root.querySelector('[role="timer"]')!;
+    expect(timer.textContent).toBe('0:59');
+    // Not an alert: the ticking text must not be announced every second.
+    expect(root.querySelector('[role="alert"]')).toBeNull();
+    expect(root.querySelector('textarea')!.readOnly).toBe(false);
+    let kept = 0;
+    fixture.componentInstance.keepOpen.subscribe(() => kept++);
+    const button = [...root.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Keep the line open'),
+    )!;
+    button.click();
+    expect(kept).toBe(1);
+  });
 });

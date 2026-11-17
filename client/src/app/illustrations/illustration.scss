@@ -1,0 +1,98 @@
+/*
+ * Shared look for the placeholder illustrations. Colors come from the --illo-* tokens so the art
+ * follows light/dark. Hand-made replacements can drop this file entirely.
+ */
+:host {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+svg {
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ground {
+  fill: var(--illo-ground);
+}
+.can__body {
+  fill: var(--illo-can);
+  stroke: var(--illo-can-rim);
+  stroke-width: 2;
+}
+.can__label {
+  fill: var(--illo-can-label);
+}
+.can__ridge {
+  fill: none;
+  stroke: var(--illo-can-shade);
+  stroke-width: 2;
+}
+.can__rim {
+  fill: var(--illo-can);
+  stroke: var(--illo-can-rim);
+  stroke-width: 2;
+}
+.can__mouth {
+  fill: var(--illo-can-shade);
+}
+.string,
+.string-alt,
+.mark {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.string {
+  stroke: var(--illo-string);
+}
+.string-alt {
+  stroke: var(--illo-string-alt);
+}
+.mark {
+  stroke: var(--illo-accent);
+}
+.mark-fill {
+  fill: var(--illo-accent);
+}
+.waves {
+  fill: none;
+  stroke: var(--illo-can-rim);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* Motion only when the user has not asked for less of it. */
+@media (prefers-reduced-motion: no-preference) {
+  .anim-sway {
+    transform-box: view-box;
+    transform-origin: 160px 104px;
+    animation: illo-sway 2.4s ease-in-out infinite alternate;
+  }
+  .anim-hum {
+    animation: illo-hum 2s ease-in-out infinite;
+  }
+}
+
+@keyframes illo-sway {
+  to {
+    transform: scaleY(0.55);
+  }
+}
+
+@keyframes illo-hum {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Cut-out stroke drawn on top of an accent fill (the "!" in a warning sign). */
+.mark-knock {
+  fill: none;
+  stroke: var(--color-surface);
+  stroke-width: 3;
+  stroke-linecap: round;
+}

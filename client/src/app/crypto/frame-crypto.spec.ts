@@ -282,6 +282,13 @@ describe('frame crypto', () => {
       }
     });
 
+    it('returns the authenticated seq even if the caller changes the frame mid-decryption', async () => {
+      const frame: Frame = await seal(key, sessionId, 1);
+      const pending = openFrame(key, sessionId, 0, frame);
+      frame.seq = 99; // decrypt is in flight
+      expect(await pending).toEqual({ ok: true, seq: 1, message: hello });
+    });
+
     it('maps other WebCrypto failures to crypto_failure, never a raw DOMException', async () => {
       const frame = await seal(key, sessionId, 1);
       const encryptOnly = await newKey(['encrypt']);

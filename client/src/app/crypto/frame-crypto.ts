@@ -132,15 +132,16 @@ export async function openFrame(
 ): Promise<OpenResult> {
   if (!isSessionId(sessionId)) return { ok: false, error: 'invalid_session' };
   if (!isFrame(frame)) return { ok: false, error: 'malformed_frame' };
-  if (frame.seq <= lastSeq) return { ok: false, error: 'replay' };
+  // Read every field once, before the first await: the caller owns `frame` and could change it while
+  // the decryption is in flight, and the seq we return must be the one the tag authenticated.
+  const { seq } = frame;
+  if (seq <= lastSeq) return { ok: false, error: 'replay' };
 
   let plain: Uint8Array;
   try {
     const iv = toArrayBufferView(base64UrlDecode(frame.iv));
     const ct = toArrayBufferView(base64UrlDecode(frame.ct));
-    plain = new Uint8Array(
-      await crypto.subtle.decrypt(gcmParams(iv, sessionId, frame.seq), key, ct),
-    );
+    plain = new Uint8Array(await crypto.subtle.decrypt(gcmParams(iv, sessionId, seq), key, ct));
   } catch (e) {
     // WebCrypto reports a failed tag check (and only that, for valid inputs) as `OperationError`.
     const auth =
@@ -151,7 +152,7 @@ export async function openFrame(
   const unpadded = unpadMessage(plain);
   plain.fill(0);
   if (!unpadded.ok) return unpadded;
-  return { ok: true, seq: frame.seq, message: unpadded.message };
+  return { ok: true, seq, message: unpadded.message };
 }
 
 /**

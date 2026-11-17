@@ -16,6 +16,10 @@ describe('DesignPage', () => {
     expect(root.textContent).toContain('Pick up');
     expect(root.textContent).toContain('Last update 20 s ago.');
     expect(root.textContent).toContain('Something tampered with the line.');
+    expect(root.querySelectorAll('app-home-link a[href="/"]').length).toBe(2);
+    expect(root.querySelector('app-home-link [role="group"]')?.textContent).toContain(
+      'Leave and cut the line?',
+    );
   });
 
   it('keeps element ids unique although screens repeat', async () => {

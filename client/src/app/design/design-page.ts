@@ -9,6 +9,7 @@ import {
   IlloReceiver,
   IlloSender,
 } from '../illustrations';
+import { HomeLink } from '../nav/home-link';
 import { LineBusyScreen } from '../screens/line-busy-screen';
 import { LineCutScreen } from '../screens/line-cut-screen';
 import { ReceiverScreen, type ReceiverPhase } from '../screens/receiver-screen';
@@ -54,6 +55,7 @@ const SAMPLE =
   imports: [
     RouterLink,
     ButtonDirective,
+    HomeLink,
     LinkCard,
     StatusPill,
     WarningBanner,
@@ -178,6 +180,35 @@ const SAMPLE =
           <figure class="frame card">
             <figcaption>6. Disconnected / ended</figcaption>
             <app-line-cut-screen />
+          </figure>
+        </div>
+      </section>
+
+      <section aria-labelledby="g-nav">
+        <h2 id="g-nav">9. Home control</h2>
+        <div class="grid">
+          <figure class="frame card">
+            <figcaption>Home control (pinned top-left on every page but home)</figcaption>
+            <div class="stack">
+              <app-home-link class="home-link--inline" />
+            </div>
+          </figure>
+          <figure class="frame card">
+            <figcaption>Leaving an open line (sender live, receiver after Pick up)</figcaption>
+            <div class="stack">
+              <app-home-link
+                class="home-link--inline"
+                [confirming]="homeConfirm()"
+                [takeFocus]="false"
+                (stay)="homeConfirm.set(false)"
+                (leave)="homeConfirm.set(false)"
+              />
+              @if (!homeConfirm()) {
+                <button type="button" appButton="secondary" (click)="homeConfirm.set(true)">
+                  Ask again
+                </button>
+              }
+            </div>
           </figure>
         </div>
       </section>
@@ -338,7 +369,8 @@ const SAMPLE =
       gap: var(--space-7);
       max-width: 90rem;
       margin-inline: auto;
-      padding: var(--space-6) var(--space-4) var(--space-8);
+      /* Starts below the pinned home control and theme toggle (2.75rem plus their gutter). */
+      padding: calc(2.75rem + 2 * var(--space-3)) var(--space-4) var(--space-8);
     }
     /* Leaves room for the theme toggle pinned to the top-right corner. */
     .guide__head {
@@ -450,6 +482,7 @@ export class DesignPage {
     },
   ];
   protected readonly pickupPhase = signal<ReceiverPhase>('pickup');
+  protected readonly homeConfirm = signal(true);
   protected readonly motionDemos = MOTION_DEMOS;
   protected readonly reducedMotion = !motionAllowed();
   protected readonly replays = signal<Partial<Record<MotionDemoId, number>>>({});

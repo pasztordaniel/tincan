@@ -6,6 +6,7 @@ import { LineCutScreen } from '../screens/line-cut-screen';
 import { ReceiverScreen } from '../screens/receiver-screen';
 import { WarningBanner } from '../ui/warning-banner/warning-banner';
 import type { RelayEndReason } from '../relay/relay.service';
+import { LeaveConfirm } from '../nav/leave-confirm';
 import { ReceiverSession } from './receiver-session';
 
 const ENDED_COPY: Record<RelayEndReason | 'not_found', string> = {
@@ -103,5 +104,9 @@ export class ReceiverPage {
   constructor() {
     // Synchronous up to the fragment read: nothing can navigate in between.
     void this.session.start(inject(ActivatedRoute).snapshot.paramMap.get('id'));
+    // Only after Pick up: the gate and every terminal stage have nothing to cut.
+    inject(LeaveConfirm).watch(
+      computed(() => this.session.stage() === 'live' && this.session.lineState() !== 'ended'),
+    );
   }
 }

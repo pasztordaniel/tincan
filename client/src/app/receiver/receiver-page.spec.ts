@@ -4,6 +4,7 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import type { Frame, PeerState } from '@tincan/shared';
 import { Subject } from 'rxjs';
 import { generateSessionKey } from '../crypto/key';
+import { LeaveConfirm } from '../nav/leave-confirm';
 import { randomSessionId } from '../crypto/test-helpers';
 import {
   RelayService,
@@ -136,5 +137,43 @@ describe('ReceiverPage', () => {
     await fixture.whenStable();
     expect(root.querySelector('h2')?.textContent).toBe('You cut the line');
     expect(document.activeElement).toBe(root.querySelector('h2'));
+  });
+});
+
+describe('ReceiverPage and leaving (T19)', () => {
+  afterEach(() => {
+    history.replaceState(null, '', '/');
+    document.body.replaceChildren();
+  });
+
+  it('reports an open line only after Pick up, until the line ends', async () => {
+    const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
+    const leave = TestBed.inject(LeaveConfirm);
+    expect(leave.lineOpen()).toBe(false);
+    root.querySelector('button')!.click();
+    await fixture.whenStable();
+    expect(leave.lineOpen()).toBe(true);
+    relay.status.set('reconnecting');
+    expect(leave.lineOpen()).toBe(true);
+    relay.ended.set('peer_left');
+    expect(leave.lineOpen()).toBe(false);
+  });
+
+  it('leaving the live page sends exactly one leave and forgets the line', async () => {
+    const { fixture, relay, root } = await mount(randomSessionId(), await newKeyString());
+    const leave = TestBed.inject(LeaveConfirm);
+    root.querySelector('button')!.click();
+    await fixture.whenStable();
+    fixture.destroy();
+    expect(relay.leave).toHaveBeenCalledOnce();
+    expect(leave.lineOpen()).toBe(false);
+    expect(location.hash).toBe('');
+  });
+
+  it('leaving the gate sends nothing', async () => {
+    const { fixture, relay } = await mount(randomSessionId(), await newKeyString());
+    fixture.destroy();
+    expect(relay.join).not.toHaveBeenCalled();
+    expect(relay.leave).not.toHaveBeenCalled();
   });
 });

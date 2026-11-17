@@ -6,6 +6,9 @@
 - **Roles** are defined in `.claude/agents/`. The main session acts as orchestrator: it runs the PM agent for
   planning, then fans tasks out to `senior-dev` / `dev`, and routes finished branches through `qa-tester`
   and `security-pentester` before a PR is opened. Flow and hand-offs: `docs/workflow.md`.
+- **Models per role** (`model:` in each agent's frontmatter): judgement-heavy roles — `pm`, `senior-dev`,
+  `security-pentester`, `designer` — run on `opus`; well-scoped execution roles — `dev`, `qa-tester` — run on
+  `sonnet`. Cost goes where mistakes are expensive (crypto, protocol, threat model); routine work stays fast.
 - **Skills** in `.claude/skills/`:
   - `task-workflow` — claim a task, branch, commit, keep the board current.
   - `pr-gate` — run every pre-PR gate and open the PR with a filled template.

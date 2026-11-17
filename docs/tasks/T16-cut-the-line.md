@@ -31,3 +31,18 @@ accidental taps by an inline two-step confirm (no browser dialog).
     derived from the relay's `left` end reason.
   - Both screens take `cutByYou` and emit `cutLine`; `/design` shows the two "cut by you" states.
   - e2e `e2e/tests/cut-the-line.spec.ts`: sender cuts, receiver cuts, Escape / Keep talking back out.
+- security: reviewed `git diff origin/main...HEAD`. Pass, no blocking findings.
+  - Key drop: sender `cut()` -> `stop()` nulls the sealer and the link, bumps `epoch`, clears all timers and
+    subscriptions, then `relay.leave()` tears down the socket, token and kept frame. Receiver `cutLine()` -> `cleanup()`
+    nulls the opener, unsubscribes, clears both timers and leaves. No other reference to either `CryptoKey`.
+  - Races: an in-flight seal is discarded (`this.sealer !== sealer`); an in-flight open is discarded (`destroyed`
+    check after the await); frames after the cut have no subscriber. Reconnect cannot resume: `teardown()` drops the
+    session token and the socket, and the socket handlers check `this.socket !== socket`. `epoch` blocks a stale
+    `start()`; `cutLine()` is a no-op unless the session is active and not ended.
+  - Confirm: `confirmed` is only emitted by "Cut it", which exists only after the trigger was clicked; focus lands on
+    "Keep talking", so a double Enter backs out. Each page binds the output to its own session.
+  - Text: rendered by interpolation / `[value]` only, no `innerHTML`; the sender box is `readOnly` and `edit()` ignores
+    input after the cut anyway. The kept text lives in memory only and is cleared on page leave and on `pagehide`
+    (`PageLifecycle` calls the sender's `end()` and the receiver's `hangUp()`). No new URL, storage, log or CSP surface (component styles only, no inline handlers).
+  - Low: cutting while `reconnecting`/`offline` cannot deliver the explicit disconnect, so the peer sees
+    `peer_timeout` after the relay grace, not `peer_left` at once. Local wipe is still immediate. Doc wording only.

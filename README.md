@@ -65,6 +65,8 @@ flowchart LR
 3. Every keystroke burst is sent as a **full-state frame** (debounced 300 ms, at most 1 s while typing), padded to a
    size bucket, encrypted and relayed. Encrypted `typing` and heartbeat frames look identical to text on the wire.
 4. A reload, close or **Cut the line** ends the session for both sides; a network blip gets a 20 s grace and resumes.
+   The home control (top left, on every page but home) asks "Leave and cut the line?" first while a line is open;
+   **Leave** sends exactly one leave, so the other side sees the line cut at once.
 
 | Package | What |
 |---|---|
@@ -97,8 +99,9 @@ and anything it tampers with must be visible to the receiver.
 - **CSP and Trusted Types.** `default-src 'none'`, `script-src 'self'`, a per-response style nonce, Trusted Types
   required, no third-party scripts, fonts or images; decrypted text is only ever rendered through Angular text
   interpolation ([ADR 0006](docs/decisions/0006-csp-style-nonce.md)).
-- **Lifecycle.** Reload, close, **Cut the line** and a 10-minute idle cut end the session for both sides at once; the
-  relay has 15-minute and 2-hour backstops.
+- **Lifecycle.** Reload, close, **Cut the line**, leaving through the home control (after a "Leave and cut the
+  line?" question) and a 10-minute idle cut end the session for both sides at once and drop the key; the relay has
+  15-minute and 2-hour backstops.
 
 - **A leaked link can read, not forge.** Publishing needs the sender token, which never leaves the sender tab's
   memory and is not part of the link. Signing every frame (ECDSA) was evaluated and declined: it only helps against a
@@ -121,13 +124,12 @@ client, to be limited per address at the reverse proxy. Report:
 
 ## Tests
 
-<!-- TODO(T19): update the counts below once the home-link button lands. -->
 | Suite | Tool | Count (current `main`) |
 |---|---|---|
 | Unit: `shared/` (protocol, validators) | Vitest | 93 |
-| Unit: `client/` (crypto, padding, relay, sessions, views) | Vitest + Angular | 297 |
+| Unit: `client/` (crypto, padding, relay, sessions, views) | Vitest + Angular | 327 |
 | Unit: `server/` (relay, rate limits, headers) | Vitest | 112 |
-| End-to-end (two real browser contexts against the production build) | Playwright | 33 |
+| End-to-end (two real browser contexts against the production build) | Playwright | 41 |
 
 ```bash
 npx playwright install chromium   # once
@@ -172,7 +174,6 @@ tests; only the typing speed and short pauses are timed. It is not part of the t
 - **Single process, in memory.** Sessions live in one Node process; horizontal scaling would need sticky sessions or
   a shared registry. A restart ends every session.
 - **Tested on Chromium.** Firefox and WebKit were not part of the automated or manual runs.
-<!-- TODO(T19): mention the home-link button if it changes any flow above. -->
 
 ## How the project is run
 

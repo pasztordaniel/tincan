@@ -30,3 +30,7 @@ known limitations & future work, AI usage (models/tools, skills, one validated c
   `docs/security/audit-T13.md`, R-6 in the limitations, signed frames declined (ADR 0009, a leaked link can read but
   not forge), counts from `main` (unit 93 + 297 + 112, e2e 33). Only the `<!-- TODO(T19) -->` markers remain (home
   control and its test counts); the GIF gets re-recorded after T19 merges. `E2E_PORT=3244 npm run verify` green.
+- pm: rebased on `main` ba6065f (T19 merged). README: home control in the flow and lifecycle ("Leave and cut the
+  line?", Leave sends exactly one leave), counts from `main` (unit 93 + 327 + 112, e2e 41), every TODO marker
+  removed, links checked. Demo GIF re-recorded with the home pill (1000x704, 10 fps, 14.7 s, 3.8 MB); the pill covers
+  nothing. `E2E_PORT=3244 npm run verify` green.

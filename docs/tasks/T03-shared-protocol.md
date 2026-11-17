@@ -42,3 +42,41 @@ This is the contract that lets client and server lanes run in parallel — keep 
   - Open questions: idle TTL cannot tell beats from text (by design the relay can't), so a session with an open
     sender tab never idles out; do we want an absolute max session lifetime? Should resume replace a still-attached
     socket for the same slot (token proves identity) or answer `not_found`? Left to T05.
+- senior-dev review (`/code-review` on `origin/main...HEAD`): approve.
+  - Correctness: base64url encode/decode, `CIPHERTEXT_LENGTHS` (363 ... 87 403, all 9 distinct), `paddingBucket`,
+    `buildAad` and every validator checked by hand and by a local differential fuzz against Node's `Buffer`
+    (200 000 random strings, 0 mismatches). Validators are linear in input size; the only regex is the anchored
+    character class `^[A-Za-z0-9_-]*$` (no backtracking), and `isCiphertext` checks the length before scanning.
+  - Fixed: ADR renumbered 0006 -> 0007 (T06 owns 0006), all references updated; status stays Proposed until the
+    maintainer accepts the 96 KiB limit. Added an exhaustive canonicality property test (every 2- and 3-char
+    string), restored an index test (barrel exports, `*_LENGTH` vs `*_BYTES`, largest frame packet ~87.5 KB fits
+    `MAX_MESSAGE_BYTES` with ~10.8 KB headroom), corrected a misleading proxy comment in `guards.spec.ts`.
+  - Nits, not fixed: `hasExactKeys` could reject early on `keys.length > required + optional` (inputs are bounded by
+    the message limit, so not needed); `isTimestamp(-0)` is accepted (harmless).
+- security review (`/security-review` + `crypto-review` on `origin/main...HEAD`): approve, no exploitable finding.
+  - (1) `hasExactKeys`: prototype must be `Object.prototype` or `null`; own `__proto__`/`constructor` from
+    `JSON.parse` rejected; getters, symbols and non-enumerables rejected; values read via descriptors. A `Proxy`
+    could still answer differently on later reads, but wire input is always `JSON.parse` output, never a proxy (info).
+  - (2) base64url: padding, `+/`, whitespace, non-ASCII, `4n+1` lengths and non-zero trailing bits rejected; empty
+    string is the valid encoding of 0 bytes and every fixed-length guard rejects it. One accepted string per byte
+    string, so ids, tokens and ciphertexts have no look-alike variants.
+  - (3) `ct` must be exactly bucket + 16 B; the relay cannot forward off-bucket sizes. 96 KiB limit: the worst-case
+    `frame` packet is 87 486 B, so a smaller limit would break the top bucket and a larger one buys nothing (ADR 0007).
+  - (4) AAD is injective: fixed prefix without `|`, session id exactly 22 chars of `[A-Za-z0-9_-]`, seq an integer in
+    `[1, 2^53 - 1]` whose `String()` is plain decimal without leading zeros or exponent. No two (session, seq)
+    pairs share an AAD.
+  - (5) Resume: one `not_found` for unknown session, wrong token and expired grace removes the protocol-level
+    token oracle (`bad_request` depends only on format). For T05: compare tokens in constant time, check both
+    slots with the same work whether or not the session exists, and emit `peer` only after success. Recommend
+    resume replaces a still-attached socket for the same slot (the token proves identity; answering `not_found`
+    would break a reconnect that beats the server's ping timeout).
+  - (6) `MAX_TEXT_LENGTH`: `JSON.stringify` emits at most 6 B per UTF-16 unit (`\uXXXX` for controls and lone
+    surrogates, else <= 3 B), so 10 000 units + 44 B envelope + 4 B header = 60 048 B <= 65 536. Holds only if T04
+    serialises with `JSON.stringify`.
+  - Notes for T05: `JOIN_ERRORS`/`RESUME_ERRORS` have no `rate_limited`, so floods of join/resume are handled by
+    dropping or disconnecting the socket; reject socket.io binary attachments (they decode to non-strings and fail
+    `isFrame` anyway); treat the ack argument as untrusted.
+  - crypto-review checklist: AAD format and shared builder PASS; replay range (`seq >= 1`, safe integer) PASS;
+    decoded JSON validation (`isPlaintextMessage`, unknown types rejected) PASS; size limits defined PASS; IV
+    length and key length guards PASS; key handling, IV generation, padding encode/decode, relay auth, headers N/A
+    (T04/T05/T06). Negative tests present for every validator.

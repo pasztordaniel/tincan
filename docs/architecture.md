@@ -42,6 +42,15 @@
    `SESSION_IDLE_TTL_MS` (15 min without any frame) and `MAX_SESSION_LIFETIME_MS` (2 h after create), both ending
    with `idle`. The relay cannot tell text from beats and must not be able to, so it cannot enforce idleness itself.
 
+Reload and close: `client/src/app/lifecycle/page-lifecycle.ts` listens for `pagehide` (not `beforeunload`, which is
+unreliable and blocks bfcache, and not `visibilitychange`, so switching tabs on a phone never ends the line). It ends
+the sender session and calls `RelayService.leave()`, an explicit socket disconnect that socket.io writes to the open
+WebSocket synchronously, so the peer sees `peer_left` at once instead of after the 20 s grace. A page restored from
+bfcache (`pageshow` with `persisted`) is ended again: its key and token are gone, so it shows the ended state.
+Network blips (WebSocket closed, relay unreachable) are the other path: both sides show "Line is slack,
+reconnecting...", the client resumes with its token through socket.io's reconnection (500 ms to 3 s backoff, so no
+extra reaction to the browser's `online` event is needed), and the sender resends its latest text.
+
 Sender view: `client/src/app/sender/sender-session.ts` owns the sender's key, sealer and timers; components only
 bind signals. Text goes out as full-state frames, debounced 300 ms with a 1 s max wait (`keepLatest`, so only the
 newest state is kept across a resume), `typing` at most 1/s, `beat` every 5 s while connected. A receiver that joins

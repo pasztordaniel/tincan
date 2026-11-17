@@ -80,7 +80,7 @@ export class ReceiverSession implements OnDestroy {
     return peer === 'connected' ? 'connected' : 'waiting';
   });
 
-  /** No frame of any kind (text, typing, beat) for `STALE_AFTER_MS`. */
+  /** No fresh frame of any kind (text, typing, beat) for `STALE_AFTER_MS`, judged by its sender timestamp. */
   readonly stale = computed(
     () =>
       this._stage() === 'live' &&
@@ -94,6 +94,8 @@ export class ReceiverSession implements OnDestroy {
   });
 
   private sessionId = '';
+  /** Smallest `arrival - ts` seen, see `markFresh`. */
+  private skew: number | null = null;
   private opener: FrameOpener | null = null;
   private joined = false;
   private destroyed = false;
@@ -182,15 +184,30 @@ export class ReceiverSession implements OnDestroy {
       this._integrityError.set(true);
       return;
     }
-    this.lastFrameAt.set(this.now());
-    this.clock.set(this.now());
     const message = result.message;
+    this.markFresh(message.ts);
     if (message.t === 'text') {
       this._text.set(message.text);
       this.setTyping(false);
     } else if (message.t === 'typing') {
       this.setTyping(true);
     }
+  }
+
+  /**
+   * Freshness comes from the sender's encrypted timestamp, not from when the relay delivered the
+   * frame: otherwise a relay could hold frames back and replay them later at the usual pace, keeping
+   * the view "live" while it shows old text. The two clocks are not synchronized, so the smallest
+   * `arrival - ts` seen so far is taken as skew plus the fastest delivery; a frame delivered later
+   * than that counts as sent at `ts + skew`. A delay present from the very first frame cannot be told
+   * from clock skew (security.md, Withholding / freezing).
+   */
+  private markFresh(ts: number): void {
+    const arrival = this.now();
+    const offset = arrival - ts;
+    if (this.skew === null || offset < this.skew) this.skew = offset;
+    this.lastFrameAt.set(ts + this.skew);
+    this.clock.set(arrival);
   }
 
   private setTyping(on: boolean): void {

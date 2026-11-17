@@ -189,15 +189,15 @@ describe('ReceiverSession', () => {
   describe('frames', () => {
     it('shows text, typing and refreshes liveness on a beat', async () => {
       await openLine();
-      await send({ t: 'text', text: 'hello', ts: 1 });
+      await send({ t: 'text', text: 'hello', ts: now });
       expect(session.text()).toBe('hello');
-      await send({ t: 'typing', ts: 2 });
+      await send({ t: 'typing', ts: now });
       expect(session.typing()).toBe(true);
       await vi.advanceTimersByTimeAsync(3100);
       expect(session.typing()).toBe(false);
 
       now += 14_000;
-      await send({ t: 'beat', ts: 3 });
+      await send({ t: 'beat', ts: now });
       now += 14_000;
       await vi.advanceTimersByTimeAsync(1000);
       expect(session.stale()).toBe(false);
@@ -206,8 +206,8 @@ describe('ReceiverSession', () => {
 
     it('a replayed frame warns and leaves the text unchanged', async () => {
       await openLine();
-      const first = await send({ t: 'text', text: 'one', ts: 1 });
-      await send({ t: 'text', text: 'two', ts: 2 });
+      const first = await send({ t: 'text', text: 'one', ts: now });
+      await send({ t: 'text', text: 'two', ts: now });
       expect(session.integrityError()).toBe(false);
       relay.frames$.next(first);
       await flush();
@@ -217,8 +217,8 @@ describe('ReceiverSession', () => {
 
     it('a tampered frame warns and leaves the text unchanged', async () => {
       await openLine();
-      await send({ t: 'text', text: 'good', ts: 1 });
-      const sealed = await sealer.seal({ t: 'text', text: 'evil', ts: 2 });
+      await send({ t: 'text', text: 'good', ts: now });
+      const sealed = await sealer.seal({ t: 'text', text: 'evil', ts: now });
       if (!sealed.ok) throw new Error('seal');
       const ct = sealed.frame.ct;
       const flipped = (ct[0] === 'A' ? 'B' : 'A') + ct.slice(1);
@@ -233,7 +233,7 @@ describe('ReceiverSession', () => {
       const generated = await cryptoService.generateKey();
       if (!generated.ok) throw new Error('key');
       const other = cryptoService.createSealer(generated.value.key, randomSessionId());
-      const sealed = await other.seal({ t: 'text', text: 'x', ts: 1 });
+      const sealed = await other.seal({ t: 'text', text: 'x', ts: now });
       if (!sealed.ok) throw new Error('seal');
       relay.frames$.next(sealed.frame);
       await flush();
@@ -258,7 +258,7 @@ describe('ReceiverSession', () => {
   describe('liveness and states', () => {
     it('goes stale after 15 s without a frame and recovers on the next one', async () => {
       await openLine();
-      await send({ t: 'text', text: 'hi', ts: 1 });
+      await send({ t: 'text', text: 'hi', ts: now });
       now += STALE_AFTER_MS - 1000;
       await vi.advanceTimersByTimeAsync(1000);
       expect(session.stale()).toBe(false);
@@ -267,7 +267,30 @@ describe('ReceiverSession', () => {
       expect(session.stale()).toBe(true);
       expect(session.lastUpdate()).toBe('15 s ago');
       expect(session.text()).toBe('hi');
-      await send({ t: 'beat', ts: 2 });
+      await send({ t: 'beat', ts: now });
+      expect(session.stale()).toBe(false);
+    });
+
+    it('judges freshness by the encrypted timestamp, so frames held back by the relay go stale', async () => {
+      await openLine();
+      // The sender's clock is 5 min behind ours: skew alone is not staleness.
+      const skew = 5 * 60_000;
+      await send({ t: 'beat', ts: now - skew });
+      expect(session.stale()).toBe(false);
+
+      // The relay starts holding frames back by 20 s but keeps delivering one every 5 s.
+      for (let i = 0; i < 3; i++) {
+        now += 5000;
+        await send({ t: 'beat', ts: now - skew - 20_000 });
+      }
+      now += 5000;
+      await send({ t: 'text', text: 'late', ts: now - skew - 20_000 });
+      expect(session.text()).toBe('late');
+      expect(session.stale()).toBe(true);
+      expect(session.lastUpdate()).toBe('20 s ago');
+
+      // Prompt frames again: fresh.
+      await send({ t: 'beat', ts: now - skew });
       expect(session.stale()).toBe(false);
     });
 
@@ -299,7 +322,7 @@ describe('ReceiverSession', () => {
 
     it('keeps the last text after the line ends', async () => {
       await openLine();
-      await send({ t: 'text', text: 'bye', ts: 1 });
+      await send({ t: 'text', text: 'bye', ts: now });
       relay.ended.set('peer_left');
       expect(session.text()).toBe('bye');
     });

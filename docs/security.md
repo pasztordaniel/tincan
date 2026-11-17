@@ -25,7 +25,7 @@
 | Replay / reorder | Monotonic `seq` in AAD; receiver accepts only `seq > lastSeq`, checked before decryption and advanced only after a fully valid frame; frames are opened one at a time so concurrent arrivals cannot race the check | `shared`, `client` |
 | Cross-session splicing | `sessionId` in AAD | `shared`, `client` |
 | IV reuse | Fresh random 96-bit IV per frame (tested) | `client` |
-| Withholding / freezing | Encrypted heartbeat with timestamp; stale indicator | `client` |
+| Withholding / freezing | Encrypted heartbeat every 5 s; the receiver judges freshness by the encrypted sender timestamp (relative to the smallest `arrival - ts` seen, which absorbs clock skew), not by arrival, so frames the relay holds back and replays at the usual pace still turn the view stale after 15 s. A delay present from the first frame on is indistinguishable from skew | `client/src/app/receiver` |
 | Length / typing-rhythm leakage | Size-bucket padding; debounce; typing+heartbeat frames padded like content | `client` |
 | Injection by id-holder | Only the socket authenticated with the sender token may publish; receiver socket is receive-only | `server` |
 | Second receiver / scanner burns slot | Single receiver lock; receiver joins only after explicit **Open** click | `server`, `client` |

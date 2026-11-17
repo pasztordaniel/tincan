@@ -38,24 +38,34 @@ import { StringPulse } from './string-pulse';
           </g>
         </g>
       }
-      <!-- Mirrors the sender: in from the left edge, the cursive "e" loop, then low into the can. -->
+      <!-- Mirrors the sender: in level from the left edge, the cursive "e" loop, then low into the can. -->
       <path
         #wire
         class="string"
         [class.string--live]="live()"
+        [class.string--after-tail]="live()"
         [class.string--waiting]="!live()"
         pathLength="1"
-        d="M0 110C30 114 76.6 122 99.6 121C129.6 119 149.6 105 145.6 83C141.6 63 117.6 53 99.6 63C77.6 77 81.6 121 99.6 131C121.6 143 191.6 145 241 145"
+        d="M0 100C30 100 76.6 122 99.6 121C129.6 119 149.6 105 145.6 83C141.6 63 117.6 53 99.6 63C77.6 77 81.6 121 99.6 131C121.6 143 191.6 145 241 145"
       />
       @if (live()) {
         <path
           #pulse
           class="pulse"
           pathLength="1"
-          d="M0 110C30 114 76.6 122 99.6 121C129.6 119 149.6 105 145.6 83C141.6 63 117.6 53 99.6 63C77.6 77 81.6 121 99.6 131C121.6 143 191.6 145 241 145"
+          d="M0 100C30 100 76.6 122 99.6 121C129.6 119 149.6 105 145.6 83C141.6 63 117.6 53 99.6 63C77.6 77 81.6 121 99.6 131C121.6 143 191.6 145 241 145"
         />
       }
     </svg>
+    <!-- Full-bleed hero only: the string reaches in from the viewport's left edge to the art's (x 0,
+         y 100), so a sender window placed to the left continues the same line. -->
+    <span
+      #tail
+      class="tail tail--left"
+      [class.tail--live]="live()"
+      [class.tail--waiting]="!live()"
+      aria-hidden="true"
+    ></span>
   `,
   styleUrl: './illustration.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,13 +86,18 @@ export class IlloReceiver implements OnChanges {
 
   private readonly pulsePath = viewChild<ElementRef<SVGPathElement>>('pulse');
   private readonly livePath = viewChild<ElementRef<SVGPathElement>>('wire');
+  private readonly tail = viewChild<ElementRef<HTMLElement>>('tail');
 
   private readonly pulser = new StringPulse();
 
   ngOnChanges(changes: SimpleChanges): void {
     const change = changes['pulse'];
     if (change && !change.firstChange) {
-      this.pulser.fire(this.pulsePath()?.nativeElement, this.livePath()?.nativeElement);
+      this.pulser.fire(
+        this.pulsePath()?.nativeElement,
+        this.livePath()?.nativeElement,
+        this.tail()?.nativeElement,
+      );
     }
   }
 }

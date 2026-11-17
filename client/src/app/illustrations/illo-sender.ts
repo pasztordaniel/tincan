@@ -61,19 +61,30 @@ const SENDER_CAN = { ...LEFT_CAN, x: 78 };
           [class.string--live]="live()"
           [class.string--waiting]="!live()"
           pathLength="1"
-          d="M120.6 118C170 118 240 116 262 104C280 94 284 50 262 36C244 26 220 36 216 56C212 78 232 92 262 94C285 95 305 90 320 86"
+          d="M120.6 118C170 118 240 116 262 104C280 94 284 50 262 36C244 26 220 36 216 56C212 78 232 92 262 94C285 95 300 100 320 100"
         />
         @if (live()) {
           <path
             #pulse
             class="pulse"
             pathLength="1"
-            d="M120.6 118C170 118 240 116 262 104C280 94 284 50 262 36C244 26 220 36 216 56C212 78 232 92 262 94C285 95 305 90 320 86"
+            d="M120.6 118C170 118 240 116 262 104C280 94 284 50 262 36C244 26 220 36 216 56C212 78 232 92 262 94C285 95 300 100 320 100"
           />
         }
       }
       <path class="waves anim-hum" d="M30 94Q24 107 30 120M18 86Q8 107 18 128" />
     </svg>
+    @if (!snip()) {
+      <!-- Full-bleed hero only: the string carries on from the art's right edge (x 320, y 100) to the
+           viewport's, so a receiver window placed to the right continues the same line. -->
+      <span
+        #tail
+        class="tail tail--right"
+        [class.tail--live]="live()"
+        [class.tail--waiting]="!live()"
+        aria-hidden="true"
+      ></span>
+    }
   `,
   styleUrl: './illustration.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,13 +107,18 @@ export class IlloSender implements OnChanges {
 
   private readonly pulsePath = viewChild<ElementRef<SVGPathElement>>('pulse');
   private readonly livePath = viewChild<ElementRef<SVGPathElement>>('wire');
+  private readonly tail = viewChild<ElementRef<HTMLElement>>('tail');
 
   private readonly pulser = new StringPulse();
 
   ngOnChanges(changes: SimpleChanges): void {
     const change = changes['pulse'];
     if (change && !change.firstChange) {
-      this.pulser.fire(this.pulsePath()?.nativeElement, this.livePath()?.nativeElement);
+      this.pulser.fire(
+        this.pulsePath()?.nativeElement,
+        this.livePath()?.nativeElement,
+        this.tail()?.nativeElement,
+      );
     }
   }
 }

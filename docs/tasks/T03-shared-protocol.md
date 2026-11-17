@@ -80,3 +80,11 @@ This is the contract that lets client and server lanes run in parallel — keep 
     decoded JSON validation (`isPlaintextMessage`, unknown types rejected) PASS; size limits defined PASS; IV
     length and key length guards PASS; key handling, IV generation, padding encode/decode, relay auth, headers N/A
     (T04/T05/T06). Negative tests present for every validator.
+- maintainer decisions (2026-11-17), folded in by the reviewer:
+  - ADR 0007 accepted (96 KiB message limit).
+  - Idleness: the sender's client warns at `IDLE_WARNING_MS` (9 min) and cuts at `IDLE_CUT_MS` (10 min) after the last
+    text change or "keep line open" action (local reason `idle`, explicit leave, receiver sees `peer_left`). Server
+    backstops: `SESSION_IDLE_TTL_MS` lowered to 15 min (no frames at all), new `MAX_SESSION_LIFETIME_MS` = 2 h; both
+    end with `idle`. Receiver logic unchanged.
+  - Resume with a valid token replaces a socket still attached to the same slot; the server disconnects the old one
+    (network switch). Contract for T05 in `events.ts` and `docs/architecture.md`; answers the open question above.

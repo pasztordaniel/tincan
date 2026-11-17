@@ -130,6 +130,17 @@ Frame encryption:
   `crypto_failure` (local faults). `FrameSealer` and `FrameOpener` process one frame at a time, so async WebCrypto
   cannot reorder frames on the sender or let two concurrent arrivals both pass the replay check on the receiver.
 
+## Client relay service
+`RelayService` (`client/src/app/relay/`) is transport only. It validates every inbound payload and ack with the
+shared validators (invalid data is dropped and surfaced as a protocol error, never trusted), exposes
+`status` (`connecting | connected | reconnecting | offline | ended`), `peer` and `ended` as signals plus observables,
+and keeps tokens in memory only. It never lets socket.io buffer: frames sent while not connected are dropped, or
+with `keepLatest` only the newest is sent after a successful `session:resume` (full-state frames make this
+correct and keep a reconnect from hitting the server's rate limit). It also counts its own emits per connection
+and refuses a frame locally (`rate_limited`) before the relay's limit is reached. Resume runs on every socket.io
+reconnect within `RECONNECT_GRACE_MS`; a failed resume or an expired grace ends the session. `create()` and
+`join()` return no tokens: only the service uses them, for `session:resume`.
+
 ## Sending model
 - **Full state, not diffs**: every `text` frame carries the whole text. Lost/dropped frames only delay;
   reconnect = resend latest. No merge logic.

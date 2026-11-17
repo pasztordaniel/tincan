@@ -38,6 +38,8 @@
 | Relay logs leak metadata | The relay logs no ids, tokens, payloads or per-event lines; only an error class when a handler throws | `server` |
 | Stale sessions | Session ends on reload/close; 20 s grace for network blips only | `server`, `client` |
 | Forgotten open line | Sender's client warns after 9 min without a text change and cuts the session at 10 min (explicit leave); the relay never learns text-vs-beat, so it only enforces the frame TTL and the lifetime cap | `client`, `server` |
+| Malformed or hostile relay messages | Client validates every relay event and ack with the strict shared validators; invalid data is dropped and counted, never logged or trusted; tokens stay in `RelayService` memory (not in outcomes, signals, storage or logs) | `shared`, `client/src/app/relay` |
+| Client gets its own session cut | No offline buffering (socket.io's send buffer is emptied on disconnect, nothing is emitted while disconnected, only one kept frame after a resume); local cap below the relay's per-connection rate limit | `client/src/app/relay` |
 | Hijacked slot on resume | Resume needs the slot's 128-bit token, compared in constant time against both slots (a random stand-in when a slot or session is absent); a valid resume replaces a still-attached socket (network switch), every failure is one `not_found` | `server` |
 
 ### Deployment notes

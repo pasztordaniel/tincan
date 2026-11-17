@@ -29,7 +29,6 @@ let nextId = 0;
         role="group"
         [attr.aria-labelledby]="uid + '-q'"
         [attr.aria-describedby]="uid + '-d'"
-        (keydown.escape)="cancel()"
       >
         <p class="cut__q" [id]="uid + '-q'">Cut the line?</p>
         <p class="cut__d" [id]="uid + '-d'">
@@ -75,6 +74,9 @@ let nextId = 0;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Document level, not on the group: right after the click focus is still on <body> (it moves in
+  // afterNextRender), and the user may also have clicked elsewhere. Escape must back out either way.
+  host: { '(document:keydown.escape)': 'onEscape($event)' },
 })
 export class CutLine {
   protected readonly uid = 'cut-line-' + nextId++;
@@ -90,6 +92,12 @@ export class CutLine {
   protected arm(): void {
     this.confirming.set(true);
     afterNextRender(() => this.keep()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected onEscape(event: Event): void {
+    if (!this.confirming()) return;
+    event.preventDefault();
+    this.cancel();
   }
 
   protected cancel(): void {

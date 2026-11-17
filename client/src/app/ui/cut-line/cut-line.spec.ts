@@ -69,4 +69,32 @@ describe('CutLine', () => {
     expect(root.querySelector('[role="group"]')).toBeNull();
     expect(document.activeElement).toBe(button('Cut the line'));
   });
+
+  it('Escape on the document right after arming, before focus has moved, backs out', async () => {
+    const { fixture, root, cuts, button } = await render();
+    button('Cut the line')!.click();
+    // No whenStable: the keypress lands in the same frame as the click.
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    document.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    await fixture.whenStable();
+    expect(cuts).toHaveLength(0);
+    expect(root.querySelector('[role="group"]')).toBeNull();
+    expect(document.activeElement).toBe(button('Cut the line'));
+  });
+
+  it('Escape works with focus elsewhere, and is left alone when not confirming', async () => {
+    const { fixture, root, button } = await render();
+    const other = document.createElement('textarea');
+    document.body.appendChild(other);
+    const idle = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    other.dispatchEvent(idle);
+    expect(idle.defaultPrevented).toBe(false);
+    button('Cut the line')!.click();
+    await fixture.whenStable();
+    other.focus();
+    other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+    expect(root.querySelector('[role="group"]')).toBeNull();
+  });
 });

@@ -57,3 +57,6 @@ accidental taps by an inline two-step confirm (no browser dialog).
     the idle clock while the question is showing.
   - Doc wording: `peer_left` is immediate only while connected (see Acceptance and architecture.md).
 - qa: behaviour PASS at 2d79617, report docs/testing/T16.md. `npm run verify` RED: e2e `cut-the-line.spec.ts` "Escape and Keep talking" fails (Escape sent before focus reaches "Keep talking" is lost, so the confirm stays open; 3 of 5 runs without a delay). Repro in the report, defect 1.
+- dev: QA bounce fixed. `CutLine` handles Escape at document level while confirming (focus is on `body` until
+  `afterNextRender`, and the user may have clicked elsewhere); `preventDefault` only when it acts. Unit tests: Escape
+  before render, Escape with focus elsewhere. e2e stable with `--repeat-each=10`.

@@ -7,15 +7,15 @@ The PM owns this table; agents update their own task file's status/branch and lo
 |---|---|---|---|---|
 | [T01](T01-monorepo-scaffold.md) | Monorepo scaffold | senior-dev | — | done |
 | [T02](T02-ci-pipeline.md) | CI pipeline + branch protection | dev | T01 | done |
-| [T03](T03-shared-protocol.md) | Shared protocol contract | senior-dev | T01 | in-review |
-| [T04](T04-crypto-core.md) | Crypto core | senior-dev | T03 | pr-open |
-| [T05](T05-relay-server.md) | Relay server | dev | T03 | backlog |
+| [T03](T03-shared-protocol.md) | Shared protocol contract | senior-dev | T01 | done |
+| [T04](T04-crypto-core.md) | Crypto core | senior-dev | T03 | done |
+| [T05](T05-relay-server.md) | Relay server | dev | T03 | pr-open |
 | [T06](T06-security-headers.md) | Security headers + static serving | dev | T01 | done |
 | [T07](T07-relay-client.md) | Client relay service | dev | T03 | backlog |
 | [T08](T08-sender-view.md) | Sender view | dev | T04, T07, T11 | backlog |
 | [T09](T09-receiver-view.md) | Receiver view | dev | T04, T07, T11 | backlog |
 | [T10](T10-lifecycle-and-staleness.md) | Disconnect, resume, staleness | dev | T05, T08, T09 | backlog |
-| [T11](T11-design-system.md) | Design system + logo | designer | T01 | pr-open |
+| [T11](T11-design-system.md) | Design system + logo | designer | T01 | done |
 | [T12](T12-e2e-suite.md) | End-to-end suite | qa-tester | T08, T09 | backlog |
 | [T13](T13-security-pass.md) | Security review + audit | security-pentester | continuous | backlog |
 | [T14](T14-readme-final.md) | Final README | pm | all | backlog |

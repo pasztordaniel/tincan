@@ -19,6 +19,7 @@ state has its own illustration instead of a technical error message.
 | 4 | Receiver | One can; the string comes in from the **left** | The live text (read-only, plain text) and a status pill. |
 | 5 | Line busy | A second string knotted onto the line between the cans | Someone else already holds the receiving can; this link cannot be opened again. |
 | 6 | Disconnected / ended | Scissors cutting the string | The peer left or the session ended; nothing more will be delivered. |
+| 7 | Sender idle warning | Open scissors closing in on a plain string (no loop), not cutting yet | Shown on the sender screen after 9 minutes with no text change: a warning banner with a countdown to the cut at 10 minutes and a **Keep the line open** button. Typing also keeps the line open. |
 
 Screens 3 and 4 mirror each other: together they form one picture of a string running from left to right.
 
@@ -27,11 +28,14 @@ Screens 3 and 4 mirror each other: together they form one picture of a string ru
 |---|---|---|
 | waiting | Waiting for the other can... | — |
 | connected | Connected: they can hear you | Connected |
+| idle | Idle: the string will be cut soon | The sender went quiet (only if the relay tells the receiver) |
 | reconnecting | Line is slack, reconnecting... | Line is slack, reconnecting... |
 | ended | Line cut | Line cut |
 
 States must be distinguishable without color alone: use text, an icon, and a subtle string animation
-(straight when connected, slack when reconnecting).
+(straight when connected, slack when reconnecting). The idle pill uses the warning tone and an open-scissors
+icon. The cursive "e" loop in the string appears only on a live line (and on the home picture); waiting and
+every trouble state draw a plain arc.
 
 ## Additions the security model requires
 These screens or states don't appear in the original sketch, but the protocol needs them:
@@ -45,7 +49,11 @@ These screens or states don't appear in the original sketch, but the protocol ne
 3. **Stale typing.** If no heartbeat arrives for 15 s, the receiver's text dims with a "last update ..." hint.
 4. **Sender after cut.** On the sender's screen the writing area becomes read-only once the line is cut, and
    the screen states that nothing typed now would be sent.
-5. **Copy feedback.** After copying the link, a short "Copied" confirmation and a reminder: "Anyone with this
+5. **Idle sender.** The relay cuts a line after 10 minutes with no text change. From minute 9 the sender
+   sees "No typing for a while: the string will be cut in 1:00" with **Keep the line open**. The pill's
+   status role announces the state once; the countdown is a `role="timer"` (live region off), visible and
+   readable on demand but never read out every second.
+6. **Copy feedback.** After copying the link, a short "Copied" confirmation and a reminder: "Anyone with this
    link can read along. Send it over a channel you trust."
 
 ## Accessibility

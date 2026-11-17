@@ -79,6 +79,16 @@ test.describe('receiver link', () => {
     }
   });
 
+  test('a key on a path outside /r is dropped before any page shows', async ({ page }) => {
+    const id = 'A'.repeat(22);
+    for (const path of [`/R/${id}`, `/rr/${id}`, `/r%2F${id}`, '/', '/x', '/design']) {
+      await page.goto(`${path}#${SAMPLE_KEY}`);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      expect(await page.evaluate(() => location.hash)).toBe('');
+      expect(page.url()).not.toContain(SAMPLE_KEY);
+    }
+  });
+
   test('an unknown thread ends at the gate with a clear message', async ({ page }) => {
     await page.goto(`/r/${'A'.repeat(22)}#${SAMPLE_KEY}`);
     await page.getByRole('button', OPEN).click();

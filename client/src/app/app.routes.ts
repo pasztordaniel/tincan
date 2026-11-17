@@ -1,4 +1,5 @@
 import type { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
+import { clearFragment, type FragmentHistory, type FragmentLocation } from './crypto/key';
 import { HomePage } from './home/home-page';
 import { hasSenderSession, SenderPage } from './sender/sender-page';
 
@@ -12,6 +13,18 @@ export function receiverMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   if (segments[0]?.path !== 'r') return null;
   const id = segments.length === 2 ? segments[1] : undefined;
   return { consumed: segments, posParams: id ? { id } : {} };
+}
+
+/**
+ * Runs once at bootstrap, before the first navigation. A link mangled outside `/r` (`/R/<id>`,
+ * `/rr/<id>`, `/r%2F<id>`, a bare `/#<key>`) would otherwise reach the `**` redirect or another page
+ * with the key still in the address bar and the session-history entry. Only literal `/r` paths keep the
+ * fragment: the receiver page reads and clears it itself. Nothing in the app puts a fragment anywhere
+ * else, so dropping it loses nothing.
+ */
+export function dropStrayFragment(location: FragmentLocation, history: FragmentHistory): void {
+  if (location.hash === '' || /^\/r(\/|$)/.test(location.pathname)) return;
+  clearFragment(location, history);
 }
 
 export const routes: Routes = [

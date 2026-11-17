@@ -61,3 +61,33 @@ Frame size + rate limits. No payload logging.
     on connections per IP belongs at the reverse proxy, or add an unbound-socket timeout? (b) `MAX_SESSIONS` is
     server-local (10 000), not in `shared/`; fine as a deployment knob? (c) T07 must not let socket.io buffer
     frames while offline (`socket.volatile` or check `connected`), or a reconnect replays them as a burst.
+- security-pentester: security review (`/security-review` method, attacked locally with socket.io-client, raw
+  engine.io/WebSocket frames and a stalled TCP reader).
+  - Verified holding: 128-bit ids and tokens from `randomBytes`, `timingSafeEqual` on fixed-length validated input,
+    both compares always run against a per-process random stand-in, one `not_found` for every resume failure;
+    20 concurrent joins give exactly one `ok`; two concurrent resumes with one token end with the later socket
+    bound and the earlier one disconnected; a resume racing grace expiry either wins (session kept) or gets
+    `not_found` (session gone), never both; `seq` stays strictly increasing across resume and takeover; receiver,
+    unbound and ended sockets get `unauthorized`; `__proto__`/`constructor` payloads answer `bad_request` and pollute
+    nothing; unknown event names, other namespaces and 10 000 extra arguments do nothing harmful; the namespace-level
+    binary hook does run before socket.io's decoder (`packet` is emitted before `data`, and `kick` removes the
+    decoder's listener synchronously); timers are cleared on every end path, per-socket state is in `WeakMap`s; logs
+    carry no ids, tokens or payloads; `socket.io-client` 4.8.4 and its three transitive packages are `dev: true`
+    in the lockfile with npm registry integrity hashes, nothing reaches the production tree.
+  - Fixed (Medium): a receiver that stops reading its TCP socket made engine.io queue every forwarded frame until
+    the ping timeout (measured: the write buffer grew by 19 packets of ~87 KB per second, ~75 MB per session over
+    45 s, at the attacker's own upload cost). The relay now counts packets queued per socket and drops the
+    receiver's connection at 40 (`maxReceiverBacklog`); that is an ordinary drop with grace and resume.
+  - Fixed (Low): before a client joined the namespace, the binary hook was not attached yet, so a `BINARY_EVENT`
+    header announcing 10 attachments made socket.io buffer up to ~1 MB per connection until `connectTimeout`
+    (45 s). The hook now sits on every engine.io connection.
+  - Implemented (maintainer decision): a socket with no successful create, join or resume is disconnected after
+    10 s (`unboundTimeoutMs`), and socket.io's `connectTimeout` uses the same value.
+  - Residual, deferred: connections per IP and the session cap (one attacker with ~10 000 connections can fill it,
+    `busy` for everyone) need a per-IP limit at the reverse proxy; a socket stays connected after its session ends
+    (per the decision only never-bound sockets time out). Verdict: approve with the fixes above.
+- senior-dev: review. Correctness of create/join/resume/frame/disconnect, the takeover unbind-before-disconnect
+  order and the end/grace timer handling is sound; tests are real-socket, mutation-checked and assert silent
+  logs. Added tests for the three changes above (each fails without its fix). Nits, not blocking: the stalled
+  receiver test reaches into the client's `ws._socket` because there is no public way to stall reads; the backlog
+  counts all packets (pings, `peer`), which only makes the bound slightly stricter. Verdict: approve.

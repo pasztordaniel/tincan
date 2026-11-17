@@ -1,16 +1,106 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { APP_NAME } from '@tincan/shared';
+import { IlloHome } from '../illustrations';
+import { ButtonDirective } from '../ui/button/button';
+import { LinkCard } from '../ui/link-card/link-card';
 
-/** Placeholder landing page; replaced by the sender view in T08. */
+/**
+ * Home (screen 1) and the "thread created" dialog (screen 2). The link is a mock until the crypto and
+ * relay tasks (T04, T07, T08) generate a real one; Join goes to the design preview for now.
+ */
 @Component({
   selector: 'app-home-page',
+  imports: [IlloHome, ButtonDirective, LinkCard, RouterLink],
   template: `
-    <main>
-      <h1>{{ appName }}</h1>
+    <main class="home">
+      <app-illo-home [width]="320" />
+      <div class="home__intro">
+        <h1>{{ appName }}</h1>
+        <p class="home__lede">
+          Two cans, one string. Type on one end, they read it live on the other, end-to-end
+          encrypted.
+        </p>
+      </div>
+      <button type="button" appButton (click)="openThread()">New thread</button>
     </main>
+
+    <dialog
+      #dialog
+      class="dialog"
+      aria-labelledby="thread-dialog-heading"
+      (close)="open.set(false)"
+    >
+      @if (open()) {
+        <div class="thread">
+          <h2 id="thread-dialog-heading">Your thread is ready</h2>
+          <p class="thread__lede">Send this link to the one person who should read along.</p>
+          <app-link-card [link]="link" />
+          <div class="thread__actions">
+            <a appButton [block]="true" routerLink="/design" fragment="sender">Join</a>
+            <button type="button" appButton="ghost" [block]="true" (click)="dialog.close()">
+              Not now
+            </button>
+          </div>
+        </div>
+      }
+    </dialog>
+  `,
+  styles: `
+    .home {
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      gap: var(--space-5);
+      min-height: 100vh;
+      padding: var(--space-6) var(--space-4);
+      text-align: center;
+    }
+    .home__intro {
+      display: grid;
+      gap: var(--space-3);
+      max-width: 26rem;
+    }
+    .home__lede {
+      color: var(--color-text-muted);
+      font-size: var(--text-lg);
+    }
+    .thread {
+      display: grid;
+      gap: var(--space-4);
+    }
+    .thread__lede {
+      color: var(--color-text-muted);
+    }
+    .thread__actions {
+      display: grid;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage {
   protected readonly appName = APP_NAME;
+  protected readonly open = signal(false);
+  /** Mock link: the fragment is where the real key will live (it never reaches the server). */
+  protected readonly link = `${inject(DOCUMENT).location.origin}/t/demo-3fK9xQ2m#k=placeholder-not-a-real-key`;
+
+  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+
+  protected openThread(): void {
+    this.open.set(true);
+    const dialog = this.dialog().nativeElement;
+    // jsdom (unit tests) lacks showModal; real browsers get the modal with its focus trap and Escape.
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+  }
 }

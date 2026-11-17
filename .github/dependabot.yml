@@ -4,6 +4,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Let a fresh release age a week first: most malicious package versions are caught and pulled
+    # within days. Security updates are not delayed by this.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     commit-message:
       prefix: 'chore(deps)'
@@ -15,6 +19,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Let a fresh release age a week first: most malicious package versions are caught and pulled
+    # within days. Security updates are not delayed by this.
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: 'ci(deps)'
     groups:

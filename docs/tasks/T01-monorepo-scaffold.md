@@ -53,3 +53,4 @@ strict TS, `engines` + `.nvmrc`.
     server: occupied port prints one line and exits 1, SIGTERM exits 0.
   - Deferred to other tasks (logged there): T02 install scripts and `npm ci --omit=dev`; T05 base64url session IDs
     and missing-client warning; T06 `inlineCritical` and `style-src`.
+- qa-tester: QA PASS. Report: [docs/testing/T01.md](../testing/T01.md)

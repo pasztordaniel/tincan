@@ -10,7 +10,7 @@ import express, { type ErrorRequestHandler, type Express } from 'express';
 import { Server as SocketServer } from 'socket.io';
 import { APP_NAME, MAX_MESSAGE_BYTES } from '@tincan/shared';
 import { BASE_HEADERS, securityHeaders, sendIndex, setStaticHeaders } from './headers.js';
-import type { RelayOptions } from './relay/options.js';
+import { DEFAULT_UNBOUND_TIMEOUT_MS, type RelayOptions } from './relay/options.js';
 import { attachRelay, type Relay, type RelayServer } from './relay/relay.js';
 
 export interface AppOptions {
@@ -136,6 +136,8 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
   const io: RelayServer = new SocketServer(httpServer, {
     // Also the WebSocket maxPayload: larger messages close the connection before they are parsed.
     maxHttpBufferSize: MAX_MESSAGE_BYTES,
+    // A connection that never joins the namespace is closed as fast as an unbound socket (relay).
+    connectTimeout: options.relay?.unboundTimeoutMs ?? DEFAULT_UNBOUND_TIMEOUT_MS,
     // The client bundles socket.io-client itself; no need to serve /socket.io/socket.io.js.
     serveClient: false,
     // No CORS headers are set, but WebSocket handshakes are not covered by CORS at all, so

@@ -25,12 +25,21 @@ export interface RelayOptions {
   maxEventsPerWindow: number;
   /** Events per window at which the socket counts as flooding and is disconnected. */
   floodEventsPerWindow: number;
+  /**
+   * A socket that has not completed a create, join or resume this long after connecting is
+   * disconnected, so idle connections cannot pile up. Also socket.io's `connectTimeout`, which closes a
+   * connection that never joins the namespace.
+   */
+  unboundTimeoutMs: number;
   /** Clock for the rate limiter. */
   now: () => number;
 }
 
 /** Enough for a small deployment; each session costs a few hundred bytes plus a few timers. */
 export const DEFAULT_MAX_SESSIONS = 10_000;
+
+/** A real client creates, joins or resumes right after connecting; 10 s leaves room for a slow network. */
+export const DEFAULT_UNBOUND_TIMEOUT_MS = 10_000;
 
 export const DEFAULT_RELAY_OPTIONS: Readonly<RelayOptions> = Object.freeze({
   graceMs: RECONNECT_GRACE_MS,
@@ -42,5 +51,6 @@ export const DEFAULT_RELAY_OPTIONS: Readonly<RelayOptions> = Object.freeze({
   // An honest sender sends a few frames per second; three times the limit within one window is never
   // a slow client catching up, so the socket is cut instead of being answered event by event.
   floodEventsPerWindow: 3 * MAX_FRAMES_PER_WINDOW,
+  unboundTimeoutMs: DEFAULT_UNBOUND_TIMEOUT_MS,
   now: () => Date.now(),
 });

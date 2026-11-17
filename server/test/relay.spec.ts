@@ -222,6 +222,40 @@ describe('untrusted input', () => {
   });
 });
 
+describe('unbound sockets', () => {
+  it('disconnects a socket that never creates, joins or resumes', async () => {
+    const h = await relay({ unboundTimeoutMs: 100 });
+    const idle = await h.connect();
+    const started = Date.now();
+    expect(await idle.disconnected).toBe('io server disconnect');
+    expect(Date.now() - started).toBeGreaterThanOrEqual(90);
+  });
+
+  it('does not count failed attempts as binding', async () => {
+    const h = await relay({ unboundTimeoutMs: 150 });
+    const prober = await h.connect();
+    expect(await prober.call('session:join', { sessionId: 'A'.repeat(22) })).toEqual(NOT_FOUND);
+    expect(await prober.disconnected).toBe('io server disconnect');
+  });
+
+  it('keeps sockets bound by create, join or resume, also after their session ends', async () => {
+    const h = await relay({ unboundTimeoutMs: 100 });
+    const { sender, receiver, sessionId, receiverToken } = await h.pair();
+    receiver.drop();
+    expect(await sender.next('peer')).toEqual({ state: 'reconnecting' });
+    const resumed = await h.connect();
+    expect(await resumed.call('session:resume', { sessionId, token: receiverToken })).toEqual(OK);
+    expect(await resumed.next('peer')).toEqual({ state: 'connected' });
+    expect(await sender.next('peer')).toEqual({ state: 'connected' });
+    h.relay.close();
+    expect(await sender.next('session:ended')).toEqual({ reason: 'shutdown' });
+    expect(await resumed.next('session:ended')).toEqual({ reason: 'shutdown' });
+    await delay(250);
+    expect(sender.socket.connected).toBe(true);
+    expect(resumed.socket.connected).toBe(true);
+  });
+});
+
 describe('rate limit', () => {
   it('drops frames above the limit per window and accepts them again in the next window', async () => {
     let now = 0;

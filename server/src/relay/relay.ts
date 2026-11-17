@@ -79,6 +79,8 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
   const options: RelayOptions = { ...DEFAULT_RELAY_OPTIONS, ...overrides };
   const sessions = new Map<string, Session>();
   const bindings = new WeakMap<RelaySocket, Binding>();
+  /** Pending unbound-socket timeouts; cleared by the socket's first successful create, join or resume. */
+  const unboundTimers = new WeakMap<RelaySocket, NodeJS.Timeout>();
 
   // -------------------------------------------------------------------------------------------
   // Session state
@@ -89,6 +91,12 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
     if (!slot) throw new Error('bind to a missing slot');
     slot.socket = socket;
     bindings.set(socket, { session, role });
+    clearUnboundTimer(socket);
+  }
+
+  function clearUnboundTimer(socket: RelaySocket): void {
+    clearTimeout(unboundTimers.get(socket));
+    unboundTimers.delete(socket);
   }
 
   function slotOf(session: Session, role: Role): Slot | null {
@@ -262,6 +270,7 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
   }
 
   function onDisconnect(socket: RelaySocket, reason: string): void {
+    clearUnboundTimer(socket);
     const binding = bindings.get(socket);
     if (!binding) return;
     bindings.delete(socket);
@@ -303,6 +312,13 @@ export function attachRelay(io: RelayServer, overrides: Partial<RelayOptions> = 
     socket.conn.on('packet', (packet: { type: string; data?: unknown }) => {
       if (packet.type === 'message' && isBinaryMessage(packet.data)) kick(socket);
     });
+
+    // A socket that never creates, joins or resumes only holds a connection; cut it. Once bound, it
+    // stays connected (also after its session ends) until it leaves or drops.
+    unboundTimers.set(
+      socket,
+      setTimeout(() => socket.disconnect(true), options.unboundTimeoutMs).unref(),
+    );
 
     const limiter = new RateLimiter(
       options.rateWindowMs,

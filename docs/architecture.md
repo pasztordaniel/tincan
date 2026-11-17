@@ -90,7 +90,8 @@ Relay behaviour (`server/src/relay/`, T05) beyond the table:
 - Disconnect reasons: `client namespace disconnect` ends the session at once (`peer_left`); every other reason starts
   the grace (`peer: reconnecting` to the other party). A socket replaced by a takeover is unbound before the server
   disconnects it, so its disconnect changes nothing.
-- Sockets stay connected after `session:ended`, unbound. On SIGINT/SIGTERM every session ends with `shutdown`.
+- A socket with no successful create, join or resume within 10 s of connecting is disconnected (`io server
+  disconnect`); failed attempts do not count. Once bound, sockets stay connected after `session:ended`, unbound. On SIGINT/SIGTERM every session ends with `shutdown`.
 
 Identifiers and encodings (all canonical unpadded base64url, `[A-Za-z0-9_-]`, never `.`):
 

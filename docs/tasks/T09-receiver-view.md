@@ -58,3 +58,9 @@ invalid link.
     on this line". The receiver token never arrived, so the slot cannot be resumed.
   - Accepted (R-5): the Angular router keeps the original URL, fragment included, in memory (`ActivatedRoute`
     snapshot); never written back to the address bar (e2e checks after navigation ends).
+- qa-tester: QA PASS. Production build on :3219 in real Chromium, scripted sender (real sealed frames), MITM proxy for
+  replay/malformed injection and TCP cuts. 110 checks: open gate and cleared fragment, mangled links, busy, unknown id,
+  live text order, typing, beats, stale and recovery, tamper/replay/other key/other AAD/malformed all warn and keep the
+  last text, ended reasons with and without text, receiver drop and resume, literal HTML, 10 000 chars, layouts at 360
+  and 1280, no key leak, no CSP errors. Report: [docs/testing/T09.md](../testing/T09.md). Note for T10: a reloaded
+  receiver tab leaves the sender at `reconnecting` for the 20 s grace, not `peer_left`.

@@ -1,0 +1,126 @@
+/*
+ * Shared look for the placeholder illustrations. Colors come from the --illo-* tokens so the art
+ * follows light/dark. Hand-made replacements can drop this file entirely.
+ */
+:host {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+svg {
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Hero use (global .hero sets the box): the art fills it, whatever the width attribute says. */
+:host(.hero) {
+  display: block;
+  max-width: none;
+}
+:host(.hero) svg {
+  width: 100%;
+  max-width: none;
+}
+
+.ground {
+  fill: var(--illo-ground);
+}
+.can__body {
+  fill: var(--illo-can);
+  stroke: var(--illo-can-rim);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.can__label {
+  fill: var(--illo-can-label);
+}
+.can__ridge {
+  fill: none;
+  stroke: var(--illo-can-shade);
+  stroke-width: 2;
+}
+/* The bottom: a crimped seam just inside the silhouette, no visible face. */
+.can__seam {
+  fill: none;
+  stroke: var(--illo-can-shade);
+  stroke-width: 1.5;
+}
+/* The open end faces the viewer: a rolled lip around a dark inside. */
+.can__lip {
+  fill: var(--illo-can);
+  stroke: var(--illo-can-rim);
+  stroke-width: 3;
+}
+.can__mouth {
+  fill: var(--illo-can-inside);
+}
+.can__wall {
+  fill: var(--illo-can-shade);
+}
+/* Where the string leaves the middle of the closed bottom. */
+.can__knot {
+  fill: var(--illo-string);
+}
+.string,
+.string-alt,
+.mark {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mark {
+  stroke-width: 2.25;
+}
+/* Loose fibres where the line is worn through. */
+.string--fray {
+  stroke-width: 1;
+}
+.string {
+  stroke: var(--illo-string);
+}
+.string-alt {
+  stroke: var(--illo-string-alt);
+}
+.mark {
+  stroke: var(--illo-accent);
+}
+.mark-fill {
+  fill: var(--illo-accent);
+}
+.waves {
+  fill: none;
+  stroke: var(--illo-can-rim);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* A frame travelling along the live string: one short bright dash, hidden at rest (driven by WAAPI). */
+/* Waiting for the other end: the loop is there, but quiet. */
+.string--waiting {
+  opacity: 0.55;
+}
+
+.pulse {
+  fill: none;
+  stroke: var(--illo-pulse);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0.12 2;
+  stroke-dashoffset: 0.12;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Motion (draw-in, sway, wobble, cut, knot, fray, snip) lives in src/illustration-motion.scss: global, so
+   the rules ship once instead of once per illustration component. */
+
+/* Cut-out stroke drawn on top of an accent fill (the "!" in a warning sign). */
+.mark-knock {
+  fill: none;
+  stroke: var(--color-surface);
+  stroke-width: 3;
+  stroke-linecap: round;
+}

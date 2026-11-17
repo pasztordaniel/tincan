@@ -1,0 +1,232 @@
+/*
+ * Illustration motion, shared by every app-illo-* component. Kept global (loaded once from styles.scss)
+ * because component styles are copied into each component that uses the stylesheet.
+ */
+
+/*
+ * Motion only when the user has not asked for less of it; every rule below is a one-shot that plays on
+ * mount (a state change) and ends on the static pose drawn above, which is also the reduced-motion
+ * fallback. The only repeats are short and finite: nothing keeps moving while someone reads.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* The string draws itself from can to can (pathLength="1" on the path). */
+  .string--draw {
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: 1;
+    animation: illo-draw 1.3s cubic-bezier(0.6, 0, 0.2, 1) 0.15s forwards;
+  }
+
+  /* The line goes live: the string draws in from can to edge, then sways gently twice and rests. */
+  .string--live {
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: 1;
+    transform-box: view-box;
+    animation:
+      illo-draw 1.3s cubic-bezier(0.6, 0, 0.2, 1) 0.15s forwards,
+      illo-sway-soft 1.4s ease-in-out 1.5s 4 alternate;
+  }
+
+  /* Reconnecting: the slack line sways twice, then hangs still. */
+  .anim-sway {
+    transform-box: view-box;
+    transform-origin: 170px 118px;
+    animation: illo-sway 1.6s ease-in-out 4 alternate;
+  }
+  .anim-hum {
+    animation: illo-hum 2s ease-in-out 3;
+  }
+
+  /* Pick-up: the receiver's can rocks once on its base. */
+  .can-wobble {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: illo-wobble 0.8s ease-out 0.1s;
+  }
+
+  /* Cut: the scissors snap shut once and the two ends spring apart. */
+  .cut-blade {
+    transform-box: view-box;
+    transform-origin: 175.7px 121px;
+  }
+  .cut-blade--a {
+    animation: illo-cut-a 0.7s cubic-bezier(0.5, 0, 0.3, 1.3) both;
+  }
+  .cut-blade--b {
+    animation: illo-cut-b 0.7s cubic-bezier(0.5, 0, 0.3, 1.3) both;
+  }
+  .cut-end {
+    transform-box: view-box;
+    animation: 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) 0.3s both;
+  }
+  .cut-end--left {
+    transform-origin: 102.6px 118px;
+    animation-name: illo-cut-left;
+  }
+  .cut-end--right {
+    transform-origin: 241px 145px;
+    animation-name: illo-cut-right;
+  }
+
+  /* Line busy: the second string draws in, loops round the first and pulls the knot tight. */
+  .knot-strand {
+    stroke-dasharray: 1 2;
+    animation: illo-draw-from 0.7s ease-in both;
+  }
+  .knot-loop {
+    stroke-dasharray: 1 2;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation:
+      illo-draw-from 0.45s ease-out 0.65s both,
+      illo-tighten 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) 1.1s;
+  }
+  .knot-tails {
+    animation: illo-fade-in 0.3s ease-out 1.1s both;
+  }
+
+  /* Integrity warning: the fibres spread out from the worn spot, then the warning sign pops. */
+  .fray-spread {
+    transform-box: view-box;
+    transform-origin: 170.5px 141.8px;
+    animation: illo-fray 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.15s both;
+  }
+  .mark-pop {
+    transform-box: view-box;
+    transform-origin: 170px 110px;
+    animation: illo-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) 0.7s both;
+  }
+
+  /* Idle: the open scissors snap twice in warning, then rest open. */
+  .snip-blade {
+    transform-box: view-box;
+    transform-origin: 294px 122px;
+    animation: 1.2s ease-in-out 0.3s;
+  }
+  .snip-blade--a {
+    animation-name: illo-snip-a;
+  }
+  .snip-blade--b {
+    animation-name: illo-snip-b;
+  }
+}
+
+@keyframes illo-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes illo-draw-from {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes illo-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes illo-wobble {
+  20% {
+    transform: rotate(-5deg);
+  }
+  45% {
+    transform: rotate(3.5deg);
+  }
+  70% {
+    transform: rotate(-1.5deg);
+  }
+}
+
+@keyframes illo-cut-a {
+  from {
+    transform: rotate(16deg);
+  }
+  45% {
+    transform: rotate(-22deg);
+  }
+}
+
+@keyframes illo-cut-b {
+  from {
+    transform: rotate(-16deg);
+  }
+  45% {
+    transform: rotate(22deg);
+  }
+}
+
+@keyframes illo-cut-left {
+  from {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes illo-cut-right {
+  from {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes illo-tighten {
+  50% {
+    transform: scale(0.8);
+  }
+}
+
+@keyframes illo-fray {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+@keyframes illo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+@keyframes illo-snip-a {
+  25%,
+  75% {
+    transform: rotate(-20deg);
+  }
+  50% {
+    transform: none;
+  }
+}
+
+@keyframes illo-snip-b {
+  25%,
+  75% {
+    transform: rotate(20deg);
+  }
+  50% {
+    transform: none;
+  }
+}
+
+@keyframes illo-sway-soft {
+  to {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes illo-sway {
+  to {
+    transform: scaleY(0.55);
+  }
+}
+
+@keyframes illo-hum {
+  50% {
+    opacity: 0.35;
+  }
+}

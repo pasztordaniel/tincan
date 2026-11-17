@@ -8,6 +8,9 @@ state has its own illustration instead of a technical error message.
 - The illustrations are hand-made by the maintainer (inline SVG, served locally because of the CSP). Until they
   arrive, the designer ships simple placeholder SVGs with the same names and sizes.
 - Tokens are CSS custom properties: color, type, spacing, radius. No remote fonts or assets.
+- The cans are the hero: full-bleed on phones, about three quarters of the viewport on wide screens (capped by
+  height so the action below stays in reach). Headings use the display face on a fluid type scale; body text
+  stays on the system sans. A soft two-tint wash and a faint same-origin grain sit behind the page.
 
 ## Screens
 
@@ -19,6 +22,7 @@ state has its own illustration instead of a technical error message.
 | 4 | Receiver | One can; the string comes in from the **left** | The live text (read-only, plain text) and a status pill. |
 | 5 | Line busy | A second string knotted onto the line between the cans | Someone else already holds the receiving can; this link cannot be opened again. |
 | 6 | Disconnected / ended | Scissors cutting the string | The peer left or the session ended; nothing more will be delivered. |
+| 7 | Sender idle warning | The sender's own can only; a plain, sagging string (no loop) with open scissors closing in near the right edge | Shown on the sender screen after 9 minutes with no text change: a warning banner with a countdown to the cut at 10 minutes and a **Keep the line open** button. Typing also keeps the line open. |
 
 Screens 3 and 4 mirror each other: together they form one picture of a string running from left to right.
 
@@ -27,11 +31,21 @@ Screens 3 and 4 mirror each other: together they form one picture of a string ru
 |---|---|---|
 | waiting | Waiting for the other can... | — |
 | connected | Connected: they can hear you | Connected |
+| idle | Idle: the string will be cut soon | The sender went quiet (only if the relay tells the receiver) |
 | reconnecting | Line is slack, reconnecting... | Line is slack, reconnecting... |
 | ended | Line cut | Line cut |
 
 States must be distinguishable without color alone: use text, an icon, and a subtle string animation
-(straight when connected, slack when reconnecting).
+(the looped string when connected, slack when reconnecting). The idle pill uses the warning tone and an open-scissors
+icon.
+
+### The string
+The string leaves the bottom of the can at mid-height and runs low, almost level. On an open line it curls up
+into one big, round cursive "e" loop (top level with the top of the right can), comes back down through itself
+and runs on: into the other can (home), off the right edge at the loop's mid-height (sender), or, mirrored, in
+from the left edge and low into the can's bottom (receiver). The loop shows while the line is open: dim and
+still while waiting (sender waiting, receiver pick-up), full colour with draw-in, sway and pulses once live.
+Every trouble state (idle, busy, cut, frayed, slack) uses a plain low sag between the can bottoms instead.
 
 ## Additions the security model requires
 These screens or states don't appear in the original sketch, but the protocol needs them:
@@ -45,8 +59,37 @@ These screens or states don't appear in the original sketch, but the protocol ne
 3. **Stale typing.** If no heartbeat arrives for 15 s, the receiver's text dims with a "last update ..." hint.
 4. **Sender after cut.** On the sender's screen the writing area becomes read-only once the line is cut, and
    the screen states that nothing typed now would be sent.
-5. **Copy feedback.** After copying the link, a short "Copied" confirmation and a reminder: "Anyone with this
+5. **Idle sender.** The relay cuts a line after 10 minutes with no text change. From minute 9 the sender
+   sees "No typing for a while: the string will be cut in 1:00" with **Keep the line open**. The pill's
+   status role announces the state once; the countdown is a `role="timer"` (live region off), visible and
+   readable on demand but never read out every second.
+6. **Copy feedback.** After copying the link, a short "Copied" confirmation and a reminder: "Anyone with this
    link can read along. Send it over a channel you trust."
+
+## Motion
+Motion is CSS, SVG and the Web Animations API only: no animation library, no inline `style` attributes (the
+CSP is `style-src 'self' 'nonce-...'`). Only transform, opacity and stroke-dashoffset on small paths are
+animated. Every animation is a one-shot tied to an event and ends on the static pose; the few repeats are
+short and finite, so nothing keeps moving while someone reads. The one exception is the empty writer's caret
+blink (1.1 s steps), a fake caret shown only while the writer is empty and unfocused, and gone once it has focus or text. Under `prefers-reduced-motion: reduce` none of
+it runs: CSS motion sits inside `@media (prefers-reduced-motion: no-preference)` and script-driven motion asks
+`motionAllowed()` first (`client/src/app/ui/motion.ts`). Every animation can be replayed on `/design#motion`.
+
+| Animation | Trigger | What moves | Reduced motion |
+|---|---|---|---|
+| String draws in | Home load; thread created (small picture in the dialog); the line goes live (sender, receiver) | stroke-dashoffset from can to can or edge, 1.3 s | The full string, drawn |
+| Live sway | Right after the draw-in on a live line | The string drifts 2 px, two slow swings, then rests | Still string |
+| Frame pulse | Every text change sent (sender) or received (receiver), at most one per 320 ms | A short bright dash runs along the string (WAAPI dashoffset) and the string twangs 1.5 px | None; the text itself is the signal |
+| Pick-up wobble | The receiver picks up and the line goes live | The can rocks once on its base, 0.8 s | Still can |
+| Scissors close | The line is cut | Blades snap shut once, the two ends spring apart | Open scissors over the cut ends |
+| Knot ties | Line busy | The second string draws in, loops round the first, the knot pulls tight | The tied knot |
+| Fray spreads | A frame fails its integrity check | The fibres spread out from the worn spot, then the warning sign pops | Frayed string and sign |
+| Scissors warn | The sender goes idle | The open scissors snap twice near the string, then rest open | Open scissors |
+| Slack sway | Reconnecting | The slack string sways twice, then hangs still | Slack string |
+| Pill change | The line state changes | The pill pops (scale 0.92 to 1); the waiting dot beats four times; the slack wave swings four times | Instant change |
+| Buttons | Hover, press | Lift 1 px on hover, scale 0.97 on press | Colour change only |
+| Dialog | Thread created | The dialog rises and fades in, the backdrop fades and blurs | Appears at once |
+| Copy | Link copied | The check mark draws itself, "Copied" slides up | Check and text appear |
 
 ## Accessibility
 WCAG AA contrast, visible focus, works at 360 px width, live text announced politely (`aria-live="polite"`),

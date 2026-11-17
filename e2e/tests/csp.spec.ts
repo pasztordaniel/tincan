@@ -3,7 +3,14 @@ import { expect, test } from '@playwright/test';
 // The built app must run under the server's strict CSP (including Trusted Types) without a single
 // violation. Violations are reported to the page as `securitypolicyviolation` events and, for blocked
 // scripts and styles, as console errors; both are collected from before the first script runs.
-for (const path of ['/', '/r/abc']) {
+// /design is the illustration and motion preview: it exercises the grain backdrop, the self-hosted
+// heading fonts, [style.x] bindings and the Web Animations API under the same policy.
+const ROUTES: readonly { path: string; heading: string }[] = [
+  { path: '/', heading: 'tincan' },
+  { path: '/r/abc', heading: 'tincan' },
+  { path: '/design', heading: 'tincan design preview' },
+];
+for (const { path, heading } of ROUTES) {
   test(`${path} loads with no CSP violations or console errors`, async ({ page }) => {
     const problems: string[] = [];
     page.on('console', (msg) => {
@@ -20,7 +27,7 @@ for (const path of ['/', '/r/abc']) {
 
     const response = await page.goto(path);
     expect(response?.headers()['content-security-policy']).toContain("default-src 'none'");
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('tincan');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
     // Give late violations (lazy chunks, injected styles) a moment to surface.
     await page.waitForLoadState('networkidle');
 

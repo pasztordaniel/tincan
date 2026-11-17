@@ -44,3 +44,4 @@ Every page except home has a control that takes you back to the home page, witho
   sends nothing), `design-page.spec.ts`. E2E `e2e/tests/home-link.spec.ts`: visibility, sender leaves mid-line (Stay,
   Enter, Escape, then Leave; receiver sees the cut; Back stays home), receiver leaves (sender sees the cut; Back says
   "Link already used", no fragment), no confirm after the line ended, gate goes straight home without joining.
+- qa-tester: QA PASS, see [T19 report](../testing/T19.md). Home link verified on every state on both sides, races and reconnect cases, 360/1280/zoom, light and dark; verify green, home-link spec 50/50 with --repeat-each=10. No defects; observations in the report.

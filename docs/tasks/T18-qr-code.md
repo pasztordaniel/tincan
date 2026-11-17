@@ -33,3 +33,17 @@ in the browser, hidden by default because it carries the decryption key.
   the receiver picks up; dark mode at 360 px keeps black on white and fits.
 - dev: open question for review. The QR is only on the sender screen, not in the "thread created" dialog on home,
   which also shows the link card.
+- security: pass, no blocking findings. Supply chain: `qrcode-generator@2.0.4` is pinned by the lockfile integrity hash,
+  registry signature verified, single maintainer, no SLSA provenance, no install scripts, no dependencies; the
+  published `dist/qrcode.mjs` is byte-identical to upstream at the release's gitHead; `npm audit` is clean. The bundled
+  code has no network, eval, DOM, storage or global access (its unused `create*Tag`/`createDataURL` string builders ship
+  in `main` but are never called). Rendering: `[attr.d]`/`[attr.viewBox]` bindings only, no `innerHTML`,
+  `bypassSecurityTrust*` or `data:` image; CSP and Trusted Types unchanged, zero violations on `/s` with the QR open
+  and on `/design`. Independent decode (jsQR on Playwright screenshots of a production build, outside the repo): the
+  element and full-page screenshots decode to exactly the receiver link at 1280 light and 360 dark (QR version 6).
+  Exposure: hidden by default, no request on open, gone on hide, on receiver connect and after the receiver leaves
+  (state reconnecting); key not in title, URL, storage, console or the aria-label; `/design` uses a dummy key, the
+  home dialog has no QR. Recommendations (non-blocking): decode the screenshot in `e2e/tests/qr.spec.ts` with `jsqr` +
+  `pngjs` as e2e devDependencies (both dependency-free) instead of re-encoding with the same library, which is
+  circular; optionally auto-close the open QR after a short time while waiting, to limit shoulder-surfing and
+  screen-recording exposure.

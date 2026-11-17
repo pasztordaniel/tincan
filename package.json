@@ -19,11 +19,12 @@
     "build": "npm run build -w @tincan/shared && npm run build -w @tincan/client && npm run build -w @tincan/server",
     "start": "npm run build && npm run serve -w @tincan/server",
     "test": "npm run build -w @tincan/shared && npm test -w @tincan/shared -w @tincan/client -w @tincan/server",
-    "e2e": "npm test -w @tincan/e2e",
-    "lint": "eslint . && prettier --check . && npm run typecheck",
+    "e2e": "npm run build && npm run test:e2e",
+    "test:e2e": "npm test -w @tincan/e2e",
+    "lint": "npm run build -w @tincan/shared && eslint . && prettier --check . && npm run typecheck --workspaces",
     "typecheck": "npm run build -w @tincan/shared && npm run typecheck --workspaces",
     "format": "prettier --write . && eslint --fix .",
-    "verify": "npm run lint && npm test && npm run build && npm run e2e"
+    "verify": "npm run lint && npm test && npm run build && npm run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

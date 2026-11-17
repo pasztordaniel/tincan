@@ -1,7 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Separate from the dev default (3000) so e2e never talks to a running dev server.
-const port = Number(process.env['E2E_PORT'] ?? 3100);
+/** Integer 1-65535, otherwise the fallback. Mirrors server/src/config.ts parsePort. */
+function parsePort(value: string | undefined, fallback: number): number {
+  const raw = value?.trim() ?? '';
+  const port = /^\d+$/.test(raw) ? Number(raw) : NaN;
+  return port >= 1 && port <= 65535 ? port : fallback;
+}
+
+// Separate from the dev/start default (3000) so e2e never talks to a server that is already running.
+const port = parsePort(process.env['E2E_PORT'], 3100);
 const baseURL = `http://localhost:${port}`;
 const isCI = Boolean(process.env['CI']);
 
@@ -17,13 +24,14 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    // The production path: build everything, serve client + socket.io from one Node process.
-    command: 'npm start',
+    // The production server (client + socket.io on one port). It serves the existing build: the
+    // root `e2e` script builds first, and `verify` reuses the build it has just made.
+    command: 'npm run serve -w @tincan/server',
     cwd: '..',
     url: `${baseURL}/healthz`,
     env: { PORT: String(port) },
     reuseExistingServer: false,
-    timeout: 180_000,
+    timeout: 30_000,
     stdout: 'ignore',
     stderr: 'pipe',
   },

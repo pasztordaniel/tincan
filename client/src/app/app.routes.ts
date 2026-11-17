@@ -1,6 +1,7 @@
 import type { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { clearFragment, type FragmentHistory, type FragmentLocation } from './crypto/key';
 import { HomePage } from './home/home-page';
+import { confirmLeave } from './nav/leave-confirm';
 import { hasSenderSession, SenderPage } from './sender/sender-page';
 
 /**
@@ -34,7 +35,13 @@ export function dropStrayFragment(
 
 export const routes: Routes = [
   { path: '', component: HomePage, title: 'tincan' },
-  { path: 's', component: SenderPage, canActivate: [hasSenderSession], title: 'tincan: your can' },
+  {
+    path: 's',
+    component: SenderPage,
+    canActivate: [hasSenderSession],
+    canDeactivate: [confirmLeave],
+    title: 'tincan: your can',
+  },
   {
     // Design preview with mocked state; lazy so it never weighs on the real screens.
     path: 'design',
@@ -43,6 +50,7 @@ export const routes: Routes = [
   },
   {
     matcher: receiverMatcher,
+    canDeactivate: [confirmLeave],
     loadComponent: () => import('./receiver/receiver-page').then((m) => m.ReceiverPage),
     title: 'tincan',
   },

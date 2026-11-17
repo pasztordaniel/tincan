@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, type OnDestroy } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  type OnDestroy,
+} from '@angular/core';
 import { Router, type CanActivateFn } from '@angular/router';
+import { LeaveConfirm } from '../nav/leave-confirm';
 import { QrPanel } from '../ui/qr-panel/qr-panel';
 import { LinkCard } from '../ui/link-card/link-card';
 import { SenderScreen } from '../screens/sender-screen';
@@ -52,6 +59,13 @@ export const hasSenderSession: CanActivateFn = () =>
 })
 export class SenderPage implements OnDestroy {
   protected readonly session = inject(SenderSession);
+
+  constructor() {
+    // Waiting, connected, idle and reconnecting all hold a line that leaving would cut.
+    inject(LeaveConfirm).watch(
+      computed(() => this.session.active() && this.session.state() !== 'ended'),
+    );
+  }
 
   ngOnDestroy(): void {
     this.session.end();

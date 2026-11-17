@@ -10,8 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ButtonDirective } from '../button/button';
-
-let nextId = 0;
+import { InlineConfirm } from '../inline-confirm/inline-confirm';
 
 /**
  * "Cut the line": ends the session on purpose. A single tap must not do that, so the button turns into
@@ -21,24 +20,18 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-cut-line',
-  imports: [ButtonDirective],
+  imports: [ButtonDirective, InlineConfirm],
   template: `
     @if (confirming()) {
-      <div
+      <app-inline-confirm
         class="cut"
-        role="group"
-        [attr.aria-labelledby]="uid + '-q'"
-        [attr.aria-describedby]="uid + '-d'"
-      >
-        <p class="cut__q" [id]="uid + '-q'">Cut the line?</p>
-        <p class="cut__d" [id]="uid + '-d'">
-          This ends it for both of you. The key is dropped and nothing more is sent.
-        </p>
-        <div class="cut__actions">
-          <button type="button" appButton="danger" (click)="confirm()">Cut it</button>
-          <button #keep type="button" appButton="secondary" (click)="cancel()">Keep talking</button>
-        </div>
-      </div>
+        question="Cut the line?"
+        detail="This ends it for both of you. The key is dropped and nothing more is sent."
+        confirmLabel="Cut it"
+        cancelLabel="Keep talking"
+        (confirmed)="confirm()"
+        (cancelled)="cancel()"
+      />
     } @else {
       <button #trigger type="button" appButton="ghost" (click)="arm()">Cut the line</button>
     }
@@ -49,28 +42,7 @@ let nextId = 0;
       justify-content: center;
     }
     .cut {
-      display: grid;
-      gap: var(--space-2);
-      justify-items: center;
       width: 100%;
-      padding: var(--space-3) var(--space-4);
-      border: 1px solid var(--color-border-strong);
-      border-radius: var(--radius-md);
-      background: var(--color-surface-muted);
-      text-align: center;
-    }
-    .cut__q {
-      font-weight: var(--weight-bold);
-    }
-    .cut__d {
-      font-size: var(--text-sm);
-      color: var(--color-text-muted);
-    }
-    .cut__actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2);
-      justify-content: center;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -79,19 +51,16 @@ let nextId = 0;
   host: { '(document:keydown.escape)': 'onEscape($event)' },
 })
 export class CutLine {
-  protected readonly uid = 'cut-line-' + nextId++;
   private readonly injector = inject(Injector);
 
   /** The user confirmed. */
   readonly confirmed = output<void>();
 
   protected readonly confirming = signal(false);
-  private readonly keep = viewChild<ElementRef<HTMLButtonElement>>('keep');
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
 
   protected arm(): void {
     this.confirming.set(true);
-    afterNextRender(() => this.keep()?.nativeElement.focus(), { injector: this.injector });
   }
 
   protected onEscape(event: Event): void {

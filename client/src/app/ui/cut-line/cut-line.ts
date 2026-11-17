@@ -4,11 +4,13 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  effect,
   inject,
   output,
   signal,
   viewChild,
 } from '@angular/core';
+import { LeaveConfirm } from '../../nav/leave-confirm';
 import { ButtonDirective } from '../button/button';
 import { InlineConfirm } from '../inline-confirm/inline-confirm';
 
@@ -17,6 +19,9 @@ import { InlineConfirm } from '../inline-confirm/inline-confirm';
  * an inline two-step confirm (no browser dialog). Focus moves to the safe choice ("Keep talking") when
  * the question opens and back to the trigger when it is dismissed; Escape backs out too.
  * The host screen removes this component once the line has ended.
+ *
+ * Only one destructive question is ever open: "Leave and cut the line?" (home control) closes this
+ * one, and arming this one withdraws that one (the held navigation is dropped, as with Stay).
  */
 @Component({
   selector: 'app-cut-line',
@@ -52,6 +57,7 @@ import { InlineConfirm } from '../inline-confirm/inline-confirm';
 })
 export class CutLine {
   private readonly injector = inject(Injector);
+  private readonly leaveConfirm = inject(LeaveConfirm);
 
   /** The user confirmed. */
   readonly confirmed = output<void>();
@@ -59,7 +65,14 @@ export class CutLine {
   protected readonly confirming = signal(false);
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
 
+  constructor() {
+    effect(() => {
+      if (this.leaveConfirm.asking()) this.confirming.set(false);
+    });
+  }
+
   protected arm(): void {
+    if (this.leaveConfirm.asking()) this.leaveConfirm.answer(false);
     this.confirming.set(true);
   }
 

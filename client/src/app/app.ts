@@ -12,9 +12,9 @@ import { ThemeToggle } from './theme/theme-toggle';
   template: `
     @if (awayFromHome()) {
       <app-home-link
-        [confirming]="leave.asking()"
-        (leave)="leave.answer(true)"
-        (stay)="leave.answer(false)"
+        [confirming]="leaveConfirm.asking()"
+        (leave)="leaveConfirm.answer(true)"
+        (stay)="leaveConfirm.answer(false)"
       />
     }
     <app-theme-toggle />
@@ -24,7 +24,7 @@ import { ThemeToggle } from './theme/theme-toggle';
 })
 export class App {
   private readonly router = inject(Router);
-  protected readonly leave = inject(LeaveConfirm);
+  protected readonly leaveConfirm = inject(LeaveConfirm);
 
   /** Every page but home itself gets the home control; hidden until the first navigation lands. */
   protected readonly awayFromHome = toSignal(

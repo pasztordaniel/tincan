@@ -4,6 +4,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  effect,
   inject,
   input,
   output,
@@ -32,6 +33,7 @@ import { InlineConfirm } from '../ui/inline-confirm/inline-confirm';
     </a>
     @if (confirming()) {
       <app-inline-confirm
+        #question
         class="home__confirm"
         question="Leave and cut the line?"
         detail="Going home ends this line for both of you. The key is dropped and nothing more is sent."
@@ -112,6 +114,18 @@ export class HomeLink {
   readonly stay = output<void>();
 
   private readonly link = viewChild.required<ElementRef<HTMLAnchorElement>>('link');
+  private readonly question = viewChild('question', { read: ElementRef<HTMLElement> });
+
+  constructor() {
+    // The question can also close without the user (the line ended, the navigation was superseded).
+    // If focus was in it, it would drop to <body> with the removed buttons; hand it to the link.
+    let wasConfirming = false;
+    effect(() => {
+      const confirming = this.confirming();
+      if (wasConfirming && !confirming && this.focusInQuestion()) this.focusLink();
+      wasConfirming = confirming;
+    });
+  }
 
   protected onEscape(event: Event): void {
     if (!this.confirming()) return;
@@ -121,6 +135,15 @@ export class HomeLink {
 
   protected stayHere(): void {
     this.stay.emit();
+    this.focusLink();
+  }
+
+  private focusInQuestion(): boolean {
+    const question = this.question()?.nativeElement;
+    return !!question && question.contains(document.activeElement);
+  }
+
+  private focusLink(): void {
     afterNextRender(() => this.link().nativeElement.focus(), { injector: this.injector });
   }
 }

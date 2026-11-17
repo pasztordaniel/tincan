@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { LeaveConfirm } from '../../nav/leave-confirm';
 import { CutLine } from './cut-line';
 
 async function render() {
@@ -96,5 +97,29 @@ describe('CutLine', () => {
     other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await fixture.whenStable();
     expect(root.querySelector('[role="group"]')).toBeNull();
+  });
+
+  it('closes when "Leave and cut the line?" opens, so only one question is up', async () => {
+    const { fixture, root, button } = await render();
+    button('Cut the line')!.click();
+    await fixture.whenStable();
+    const leave = TestBed.inject(LeaveConfirm);
+    const answer = leave.ask();
+    await fixture.whenStable();
+    expect(root.querySelector('[role="group"]')).toBeNull();
+    expect(button('Cut the line')).toBeDefined();
+    leave.answer(false);
+    await expect(answer).resolves.toBe(false);
+  });
+
+  it('opening it withdraws "Leave and cut the line?" (the held navigation stays put)', async () => {
+    const { fixture, root, button } = await render();
+    const leave = TestBed.inject(LeaveConfirm);
+    const answer = leave.ask();
+    button('Cut the line')!.click();
+    await expect(answer).resolves.toBe(false);
+    expect(leave.asking()).toBe(false);
+    await fixture.whenStable();
+    expect(root.querySelector('[role="group"]')).not.toBeNull();
   });
 });

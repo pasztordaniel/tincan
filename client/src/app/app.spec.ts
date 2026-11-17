@@ -44,15 +44,23 @@ const button = (root: HTMLElement, name: string) =>
   )!;
 
 /**
- * A navigation held by the guard counts as pending work, so `whenStable()` would wait for the answer.
- * Let the router run for a few macrotasks and render instead.
+ * Waits until `done()` holds, ticking the app between macrotasks. A navigation held by the guard counts
+ * as pending work, so `whenStable()` would wait for the answer; this waits for what the test needs.
  */
-async function settle() {
-  for (let i = 0; i < 4; i++) {
+async function until(done: () => boolean) {
+  for (let i = 0; i < 50 && !done(); i++) {
     await new Promise((r) => setTimeout(r));
     TestBed.tick();
   }
+  expect(done()).toBe(true);
 }
+
+/** The question is up and has taken focus. */
+const asked = (root: HTMLElement) => () =>
+  question(root) !== null && document.activeElement === button(root, 'Stay');
+/** No navigation in flight and the question gone. */
+const settled = (router: Router, root: HTMLElement) => () =>
+  router.currentNavigation() === null && question(root) === null;
 
 describe('App', () => {
   afterEach(() => document.body.replaceChildren());
@@ -79,7 +87,7 @@ describe('App', () => {
       async (state) => {
         const { router, session, root } = await boot('/s', state);
         homeLink(root)!.click();
-        await settle();
+        await until(asked(root));
         expect(question(root)?.textContent).toContain('Leave and cut the line?');
         expect(document.activeElement).toBe(button(root, 'Stay'));
         expect(router.url).toBe('/s');
@@ -90,9 +98,9 @@ describe('App', () => {
     it('Stay keeps the line and puts focus back on the link', async () => {
       const { router, session, root } = await boot('/s');
       homeLink(root)!.click();
-      await settle();
+      await until(asked(root));
       button(root, 'Stay').click();
-      await settle();
+      await until(() => settled(router, root)() && document.activeElement === homeLink(root));
       expect(question(root)).toBeNull();
       expect(router.url).toBe('/s');
       expect(session.end).not.toHaveBeenCalled();
@@ -102,7 +110,7 @@ describe('App', () => {
     it('Escape backs out the same way', async () => {
       const { router, session, root } = await boot('/s');
       homeLink(root)!.click();
-      await settle();
+      await until(asked(root));
       const escape = new KeyboardEvent('keydown', {
         key: 'Escape',
         bubbles: true,
@@ -110,7 +118,7 @@ describe('App', () => {
       });
       document.dispatchEvent(escape);
       expect(escape.defaultPrevented).toBe(true);
-      await settle();
+      await until(() => settled(router, root)() && document.activeElement === homeLink(root));
       expect(question(root)).toBeNull();
       expect(router.url).toBe('/s');
       expect(session.end).not.toHaveBeenCalled();
@@ -120,9 +128,9 @@ describe('App', () => {
     it('Leave goes home and ends the session exactly once', async () => {
       const { router, session, root } = await boot('/s');
       homeLink(root)!.click();
-      await settle();
+      await until(asked(root));
       button(root, 'Leave').click();
-      await settle();
+      await until(() => settled(router, root)() && router.url === '/');
       expect(router.url).toBe('/');
       expect(session.end).toHaveBeenCalledOnce();
       expect(homeLink(root)).toBeNull();
@@ -131,8 +139,7 @@ describe('App', () => {
     it('goes straight home once the line has ended', async () => {
       const { router, session, root } = await boot('/s', 'ended');
       homeLink(root)!.click();
-      await settle();
-      expect(question(root)).toBeNull();
+      await until(settled(router, root));
       expect(router.url).toBe('/');
       expect(session.end).toHaveBeenCalledOnce();
     });
@@ -140,11 +147,26 @@ describe('App', () => {
     it('withdraws the question if the line ends while it is up', async () => {
       const { router, session, root } = await boot('/s');
       homeLink(root)!.click();
-      await settle();
+      await until(asked(root));
       session.state.set('ended');
-      await settle();
-      expect(question(root)).toBeNull();
+      await until(settled(router, root));
       expect(router.url).toBe('/s');
+      // Focus was on "Stay"; it goes to the link instead of dropping to <body>.
+      await until(() => document.activeElement === homeLink(root));
+    });
+
+    it('keeps only one question open: asking to leave closes "Cut the line?"', async () => {
+      const { router, root } = await boot('/s');
+      const cutTrigger = [...root.querySelectorAll<HTMLButtonElement>('app-cut-line button')].find(
+        (b) => b.textContent?.trim() === 'Cut the line',
+      )!;
+      cutTrigger.click();
+      await until(() => root.querySelector('app-cut-line [role="group"]') !== null);
+      homeLink(root)!.click();
+      await until(asked(root));
+      expect(root.querySelector('app-cut-line [role="group"]')).toBeNull();
+      button(root, 'Stay').click();
+      await until(settled(router, root));
     });
   });
 });

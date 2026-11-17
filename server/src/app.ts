@@ -1,5 +1,10 @@
 import { existsSync } from 'node:fs';
-import { createServer, STATUS_CODES, type IncomingMessage, type Server as HttpServer } from 'node:http';
+import {
+  createServer,
+  STATUS_CODES,
+  type IncomingMessage,
+  type Server as HttpServer,
+} from 'node:http';
 import { extname, join } from 'node:path';
 import express, { type ErrorRequestHandler, type Express } from 'express';
 import { Server as SocketServer } from 'socket.io';
@@ -39,7 +44,10 @@ export function isAllowedOrigin(origin: string | undefined, host: string | undef
 }
 
 function sendStatus(res: express.Response, status: number): void {
-  res.status(status).type('text/plain').send(STATUS_CODES[status] ?? 'Error');
+  res
+    .status(status)
+    .type('text/plain')
+    .send(STATUS_CODES[status] ?? 'Error');
 }
 
 export function createTincanServer(options: AppOptions = {}): TincanServer {

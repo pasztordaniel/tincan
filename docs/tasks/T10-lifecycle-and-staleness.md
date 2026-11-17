@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| dev | T05, T08, T09 | in-review | feat/T10-lifecycle |
+| dev | T05, T08, T09 | pr-open | `feat/T10-lifecycle` |
 
 ## Goal
 End-to-end handling of network blips (grace + resume, resend latest text) vs. reload/close (session ends, peer notified),

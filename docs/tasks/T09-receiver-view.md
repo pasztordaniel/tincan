@@ -2,7 +2,7 @@
 
 | Owner | Depends on | Status | Branch |
 |---|---|---|---|
-| dev | T04, T07, T11 (visuals) | in-review | `feat/T09-receiver-view` |
+| dev | T04, T07, T11 (visuals) | done | `feat/T09-receiver-view` |
 
 ## Goal
 `/r/:id` shows an **Open** gate → reads + clears fragment → joins → decrypts frames → shows text via interpolation.

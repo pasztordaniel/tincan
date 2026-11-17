@@ -40,7 +40,7 @@
 }
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   /* Surfaces: warm paper, like a kitchen-table craft project. */
   --color-bg: #fbf8f3;
@@ -135,46 +135,58 @@
   --content-width: 34rem;
 }
 
-/* Dark theme: same roles, night-time tin. Cheap because everything goes through tokens. */
+/*
+ * Dark theme: same roles, night-time tin. Applied when the OS asks for dark unless the user forced light
+ * (ThemeService sets data-theme on <html>), or whenever the user forced dark.
+ */
+@mixin dark-tokens {
+  color-scheme: dark;
+  --color-bg: #17161c;
+  --color-surface: #22212a;
+  --color-surface-muted: #2a2933;
+  --color-border: #34333e;
+  --color-border-strong: #777284;
+  --color-text: #ece9f1;
+  --color-text-muted: #aaa5b4;
+  --color-primary: #7cc4c9;
+  --color-primary-hover: #9bd5d9;
+  --color-on-primary: #10272a;
+  --color-primary-soft: #1f3638;
+  --color-focus: #9db1ff;
+  --tone-waiting-bg: #2c2748;
+  --tone-waiting-fg: #d9d2ff;
+  --tone-connected-bg: #1e3a28;
+  --tone-connected-fg: #bdeccb;
+  --tone-reconnecting-bg: #3a3016;
+  --tone-reconnecting-fg: #f6de94;
+  --tone-ended-bg: #3f2222;
+  --tone-ended-fg: #f3c4c0;
+  --tone-warning-bg: #45221a;
+  --tone-warning-fg: #ffd2c4;
+  --tone-warning-border: #e2765a;
+  --tone-info-bg: #1b2e3b;
+  --tone-info-fg: #bfe0f3;
+  --illo-can: #8a929e;
+  --illo-can-shade: #6b7380;
+  --illo-can-rim: #525a66;
+  --illo-can-label: #b98b7c;
+  --illo-string: #d2a777;
+  --illo-string-alt: #b4a6ea;
+  --illo-accent: #e2765a;
+  --illo-ground: #262530;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-md: 0 6px 20px rgb(0 0 0 / 35%);
+  --shadow-lg: 0 18px 48px rgb(0 0 0 / 50%);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #17161c;
-    --color-surface: #22212a;
-    --color-surface-muted: #2a2933;
-    --color-border: #34333e;
-    --color-border-strong: #777284;
-    --color-text: #ece9f1;
-    --color-text-muted: #aaa5b4;
-    --color-primary: #7cc4c9;
-    --color-primary-hover: #9bd5d9;
-    --color-on-primary: #10272a;
-    --color-primary-soft: #1f3638;
-    --color-focus: #9db1ff;
-    --tone-waiting-bg: #2c2748;
-    --tone-waiting-fg: #d9d2ff;
-    --tone-connected-bg: #1e3a28;
-    --tone-connected-fg: #bdeccb;
-    --tone-reconnecting-bg: #3a3016;
-    --tone-reconnecting-fg: #f6de94;
-    --tone-ended-bg: #3f2222;
-    --tone-ended-fg: #f3c4c0;
-    --tone-warning-bg: #45221a;
-    --tone-warning-fg: #ffd2c4;
-    --tone-warning-border: #e2765a;
-    --tone-info-bg: #1b2e3b;
-    --tone-info-fg: #bfe0f3;
-    --illo-can: #8a929e;
-    --illo-can-shade: #6b7380;
-    --illo-can-rim: #525a66;
-    --illo-can-label: #b98b7c;
-    --illo-string: #d2a777;
-    --illo-string-alt: #b4a6ea;
-    --illo-accent: #e2765a;
-    --illo-ground: #262530;
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
-    --shadow-md: 0 6px 20px rgb(0 0 0 / 35%);
-    --shadow-lg: 0 18px 48px rgb(0 0 0 / 50%);
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
   }
+}
+
+:root[data-theme='dark'] {
+  @include dark-tokens;
 }
 
 /* Base. */

@@ -18,10 +18,27 @@ export default tseslint.config(
   {
     files: ['**/*.ts', '**/*.js'],
     extends: [eslint.configs.recommended, ...tseslint.configs.recommended],
+    rules: {
+      // A leading underscore marks a parameter that must exist for its position or arity
+      // (e.g. Express recognises error handlers by their four parameters).
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
   },
   {
-    files: ['server/**/*.ts', 'shared/**/*.ts', 'e2e/**/*.ts', '*.js'],
+    files: ['server/**/*.ts', 'shared/**/*.ts', 'e2e/**/*.ts', '*.js', 'client/*.mjs'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    // Type-aware rules: each file is checked against the tsconfig of its own workspace.
+    files: ['{client,server,shared,e2e}/**/*.ts'],
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+    rules: {
+      // An un-awaited promise in socket or crypto code silently drops errors and reorders frames.
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
   },
   {
     files: ['client/**/*.ts'],

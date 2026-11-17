@@ -46,7 +46,7 @@
 
 ### Deployment notes
 - **Reverse proxy must preserve `Host`** (nginx: `proxy_set_header Host $host;`). The socket.io origin check compares
-  the browser's `Origin` host:port with `Host` (scheme is not compared), so a rewritten `Host` makes every handshake 403.
+  the browser's `Origin` host:port with `Host` (scheme is not compared), so a rewritten `Host` makes every handshake fail (the WebSocket upgrade answers 400 `Forbidden`).
 - Terminate TLS at the proxy and send `X-Forwarded-Proto: https` so HSTS is emitted; also forward WebSocket upgrades.
 - **Limit connections per client address at the proxy** (nginx: `limit_conn` on `/socket.io/`, e.g. 20 per address,
   plus `limit_req` on the upgrade). The relay itself has no per-address limit (R-6).

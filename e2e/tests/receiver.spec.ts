@@ -84,11 +84,11 @@ test.describe('receiver link', () => {
     for (const path of [`/R/${id}`, `/rr/${id}`, `/r%2F${id}`, '/', '/x', '/design']) {
       await page.goto(`${path}#${SAMPLE_KEY}`);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      // `/` after a redirect to `/` is a same-document navigation, cleared by the hashchange listener.
+      // `/` after a redirect to `/` is a same-document navigation, dropped after the router's in-place navigation ends.
       await expect.poll(() => page.evaluate(() => location.hash), { message: path }).toBe('');
       expect(page.url()).not.toContain(SAMPLE_KEY);
     }
-    // Same path, new fragment: no reload, so the hashchange listener has to drop it.
+    // Same path, new fragment: no reload, so it is dropped after the router's in-place navigation ends.
     await page.evaluate((key) => (location.hash = key), SAMPLE_KEY);
     await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
   });

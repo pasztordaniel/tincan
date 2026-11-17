@@ -157,7 +157,7 @@ export function createTincanServer(options: AppOptions = {}): TincanServer {
 
   // socket.io answers its own paths before Express sees them, so add the base headers here too
   // (not the CSP: those responses are not documents). A listener prepended after socket.io has
-  // attached runs first for every request, including engine.io's own 400/403 error responses,
+  // attached runs first for every request, including engine.io's own 400 error responses,
   // which skip its `headers` event; engine.io's writeHead merges with headers set here.
   httpServer.prependListener('request', (_req, res) => {
     for (const [name, value] of Object.entries(BASE_HEADERS)) res.setHeader(name, value);

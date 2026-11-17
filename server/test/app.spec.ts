@@ -69,6 +69,11 @@ describe('socket.io origin check', () => {
     expect(res.status).toBe(101);
   });
 
+  it('accepts an Origin-less WebSocket handshake (non-browser clients; tokens authorize, see T13-6)', async () => {
+    const res = await upgrade({ Host: 'tincan.test' });
+    expect(res.status).toBe(101);
+  });
+
   it('rejects a WebSocket handshake from a foreign or opaque Origin', async () => {
     // engine.io refuses every upgrade with 400 and names the reason in the body.
     for (const origin of ['http://evil.test', 'null']) {

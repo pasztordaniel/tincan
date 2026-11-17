@@ -130,6 +130,15 @@ describe('padMessage / unpadMessage', () => {
         enc.encode('{"t":"beat","ts":1,"__proto__":{}}'),
         enc.encode('[1]'),
         enc.encode('null'),
+        // Invalid UTF-8 inside a JSON string: a lenient decoder would accept these as U+FFFD.
+        ...[[0xff], [0xc0, 0xaf], [0xed, 0xa0, 0x80], [0xf4, 0x90, 0x80, 0x80]].map(
+          (bad) =>
+            new Uint8Array([
+              ...enc.encode('{"t":"text","text":"'),
+              ...bad,
+              ...enc.encode('","ts":1}'),
+            ]),
+        ),
       ];
       for (const body of bodies) {
         expect(unpadMessage(rawPadded(body, 256))).toEqual({ ok: false, error: 'bad_message' });

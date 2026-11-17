@@ -303,6 +303,30 @@ describe('frame crypto', () => {
     });
   });
 
+  describe('plaintext buffers', () => {
+    it('zeroes the padded plaintext after sealing', async () => {
+      const encrypt = vi.spyOn(crypto.subtle, 'encrypt');
+      await seal(key, sessionId, 1);
+      const plaintext = encrypt.mock.calls[0]![2] as Uint8Array;
+      expect(plaintext.length).toBe(PADDING_BUCKETS[0]);
+      expect(plaintext.every((b) => b === 0)).toBe(true);
+    });
+
+    it('zeroes the decrypted plaintext after opening', async () => {
+      const frame = await seal(key, sessionId, 1);
+      const original = crypto.subtle.decrypt.bind(crypto.subtle);
+      const buffers: ArrayBuffer[] = [];
+      vi.spyOn(crypto.subtle, 'decrypt').mockImplementation(async (...args) => {
+        const buffer = await original(...args);
+        buffers.push(buffer);
+        return buffer;
+      });
+      expect((await openFrame(key, sessionId, 0, frame)).ok).toBe(true);
+      expect(buffers).toHaveLength(1);
+      expect(new Uint8Array(buffers[0]!).every((b) => b === 0)).toBe(true);
+    });
+  });
+
   it('classifies relay-caused failures as integrity errors', () => {
     expect([...INTEGRITY_ERRORS].sort()).toEqual(
       ['auth_failed', 'bad_message', 'bad_padding', 'malformed_frame', 'replay'].sort(),
@@ -360,6 +384,26 @@ describe('frame crypto', () => {
       expect(await opener.open(forged)).toEqual({ ok: false, error: 'auth_failed' });
       expect(opener.lastSeq).toBe(0);
       expect((await opener.open(r.frame)).ok).toBe(true);
+    });
+
+    it('does not advance lastSeq on an authentic frame with bad padding or a bad message', async () => {
+      const opener = new FrameOpener(key, sessionId);
+      const json = new TextEncoder().encode(JSON.stringify(hello));
+      const badPadding = await encryptRaw(key, rawPadded(json, 512), buildAad(sessionId, 5), 5);
+      const badMessage = await encryptRaw(
+        key,
+        rawPadded(new TextEncoder().encode('{"t":"evil","ts":1}'), 256),
+        buildAad(sessionId, 6),
+        6,
+      );
+      expect(await opener.open(badPadding)).toEqual({ ok: false, error: 'bad_padding' });
+      expect(await opener.open(badMessage)).toEqual({ ok: false, error: 'bad_message' });
+      expect(opener.lastSeq).toBe(0);
+      expect(await opener.open(await seal(key, sessionId, 2))).toEqual({
+        ok: true,
+        seq: 2,
+        message: hello,
+      });
     });
 
     it('opens concurrent arrivals one at a time: in order accepted, duplicate rejected', async () => {

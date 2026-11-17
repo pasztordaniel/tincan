@@ -29,7 +29,7 @@ in the browser, hidden by default because it carries the decryption key.
   role/label, no image element), `qr-panel.spec.ts` (closed by default, aria wiring, toggle, payload is the exact
   link), `sender-page.spec.ts` (hidden by default, payload equals the link, hides on connected/idle/reconnecting/ended
   and without a link, closed again afterwards), `design-page.spec.ts`. E2E `e2e/tests/qr.spec.ts`: hidden by default,
-  opening makes no request, the drawn modules equal an independent encoding of the exact link (no decoder), hides when
+  opening makes no request, a screenshot of the QR is decoded with `jsqr` and equals the exact link, hides when
   the receiver picks up; dark mode at 360 px keeps black on white and fits.
 - dev: open question for review. The QR is only on the sender screen, not in the "thread created" dialog on home,
   which also shows the link card.
@@ -47,3 +47,4 @@ in the browser, hidden by default because it carries the decryption key.
   `pngjs` as e2e devDependencies (both dependency-free) instead of re-encoding with the same library, which is
   circular; optionally auto-close the open QR after a short time while waiting, to limit shoulder-surfing and
   screen-recording exposure.
+- dev: applied the review. E2E now decodes `svg.screenshot()` (`jsqr` + `pngjs`, e2e devDependencies only; `qrcode-generator` removed from e2e) at 1280 light and 360 dark. The payload is UTF-8 encoded before it reaches the library (it kept only the low byte of each UTF-16 unit), with a unit test on a non-ASCII string. Accepted residual risk: an opened QR stays open while the line is waiting, no auto-close, since the link card already shows the key as text.

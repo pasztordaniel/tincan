@@ -19,7 +19,9 @@ export function qrShape(payload: string): QrShape {
   // Type 0 picks the smallest version that fits. Level M: the receiver link is long (it holds the key),
   // so a lower level keeps the module grid coarse enough to scan from a phone held beside the screen.
   const qr = qrcode(0, 'M');
-  qr.addData(payload, 'Byte');
+  // The library keeps only the low byte of each UTF-16 unit. Hand it the UTF-8 bytes as a Latin-1 string,
+  // so non-ASCII text is encoded as UTF-8 (what scanners expect) instead of being silently truncated.
+  qr.addData(String.fromCharCode(...new TextEncoder().encode(payload)), 'Byte');
   qr.make();
   const count = qr.getModuleCount();
   let path = '';

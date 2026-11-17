@@ -15,8 +15,8 @@ Options:
    and a wrong QR fails silently. Not worth owning.
 
 **Decision.** Option 1, added to `client` as a runtime dependency (`^2.0.4`, exact version fixed by
-`package-lock.json`, like every other dependency) and as a dev dependency of `e2e` (to compute the expected
-module grid; it is not a decoder). We use only the matrix: `QrCode` turns it into one SVG `<path>` bound with
+`package-lock.json`, like every other dependency) and, in `e2e` only, `jsqr` and `pngjs` as dev dependencies (the spec decodes a screenshot of the
+rendered QR and compares it with the link; nothing ships to users). We use only the matrix: `QrCode` turns it into one SVG `<path>` bound with
 `[attr.d]`, so the output is plain Angular template bindings (no `createSvgTag`/`createImgTag`, which return
 HTML strings). Byte mode, error correction M, quiet zone of 4 modules, dark modules on a light ground in every
 theme (`--qr-dark` / `--qr-light`).

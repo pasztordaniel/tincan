@@ -29,6 +29,19 @@ describe('qrShape', () => {
     expect(darkModules(shape.path)).toEqual(expected);
   });
 
+  it('encodes non-ASCII payloads as UTF-8, not as truncated UTF-16 units', () => {
+    const text = 'https://tincan.example/r/\u00e9\u20ac\u{1F600}#k';
+    const utf8 = qrcode(0, 'M');
+    utf8.addData(String.fromCharCode(...new TextEncoder().encode(text)), 'Byte');
+    utf8.make();
+    const n = utf8.getModuleCount();
+    const expected = new Set<string>();
+    for (let r = 0; r < n; r++)
+      for (let c = 0; c < n; c++)
+        if (utf8.isDark(r, c)) expected.add(`${r + QR_QUIET_ZONE},${c + QR_QUIET_ZONE}`);
+    expect(darkModules(qrShape(text).path)).toEqual(expected);
+  });
+
   it('encodes different payloads differently', () => {
     expect(qrShape(LINK).path).not.toBe(qrShape(LINK + 'x').path);
   });

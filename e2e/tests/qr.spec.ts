@@ -1,19 +1,19 @@
-import { expect, test } from '@playwright/test';
-import qrcode from 'qrcode-generator';
+import { expect, test, type Locator } from '@playwright/test';
+import jsQRImport from 'jsqr';
+import { PNG } from 'pngjs';
 import { PICK_UP, Traffic, newPage, startThread } from './helpers/two-party.js';
 
-/** The dark modules (row,col) a rendered path draws, quiet zone removed. */
-function modulesFromPath(path: string, quiet: number): Set<string> {
-  const dark = new Set<string>();
-  for (const m of path.matchAll(/M(\d+) (\d+)h(\d+)v1h-\d+z/g)) {
-    for (let i = 0; i < Number(m[3]); i++) {
-      dark.add(`${Number(m[2]) - quiet},${Number(m[1]) + i - quiet}`);
-    }
-  }
-  return dark;
+// jsqr is CommonJS with `export default` typings; under NodeNext the callable sits on `.default`.
+type Decode = (data: Uint8ClampedArray, width: number, height: number) => { data: string } | null;
+const jsQR = (jsQRImport as unknown as { default: Decode }).default;
+
+/** Decodes the rendered QR (a real screenshot of the SVG) the way a phone would. */
+async function decode(svg: Locator): Promise<string | null> {
+  const png = PNG.sync.read(await svg.screenshot());
+  return jsQR(new Uint8ClampedArray(png.data), png.width, png.height)?.data ?? null;
 }
 
-test('the QR code is hidden by default, local, encodes the exact link, and hides on connect', async ({
+test('the QR code is hidden by default, local, decodes to the exact link, and hides on connect', async ({
   browser,
 }) => {
   const s = await newPage(browser);
@@ -41,16 +41,8 @@ test('the QR code is hidden by default, local, encodes the exact link, and hides
     const box = await svg.boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(200);
 
-    // No QR decoder here: the drawn modules must equal an independent encoding of the link.
-    const d = await svg.locator('path').getAttribute('d');
-    const qr = qrcode(0, 'M');
-    qr.addData(link, 'Byte');
-    qr.make();
-    const expected = new Set<string>();
-    for (let row = 0; row < qr.getModuleCount(); row++)
-      for (let col = 0; col < qr.getModuleCount(); col++)
-        if (qr.isDark(row, col)) expected.add(`${row},${col}`);
-    expect(modulesFromPath(d!, 4)).toEqual(expected);
+    // Decode what is on screen: it must be exactly the receiver link.
+    expect(await decode(svg)).toBe(link);
 
     // The receiver connects: the QR (and the link card) disappear.
     await r.page.goto(link);
@@ -70,7 +62,7 @@ test('the QR code stays readable on a light ground in dark mode at 360 px', asyn
   });
   const page = await context.newPage();
   try {
-    await startThread(page);
+    const { link } = await startThread(page);
     await page.getByRole('button', { name: 'Show QR code' }).click();
     const svg = page.getByRole('img', { name: 'QR code for the receiver link' });
     await expect(svg.locator('rect')).toHaveCSS('fill', 'rgb(255, 255, 255)');
@@ -78,6 +70,7 @@ test('the QR code stays readable on a light ground in dark mode at 360 px', asyn
     const box = await svg.boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(200);
     expect(box!.x + box!.width).toBeLessThanOrEqual(360);
+    expect(await decode(svg)).toBe(link);
   } finally {
     await context.close();
   }

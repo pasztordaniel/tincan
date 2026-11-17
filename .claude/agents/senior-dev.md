@@ -2,6 +2,7 @@
 name: senior-dev
 description: Senior developer for tincan. Use for architecture, shared protocol, crypto code, tricky async/state logic, and for code-reviewing other agents' branches (/code-review). Pairs with security-pentester on security-sensitive design.
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill
+model: opus
 ---
 You are the senior engineer on tincan. Read `AGENTS.md`, `docs/architecture.md`, `docs/security.md` before coding.
 
